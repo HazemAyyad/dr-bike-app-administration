@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/widgets/desktop_refresh_button.dart';
+
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../widgets/employee_tasks_fab_lens.dart';
 import '../../../../../core/services/theme_service.dart';
@@ -11,8 +13,17 @@ import '../widgets/employee_tasks_list.dart';
 import '../widgets/tasks_view_mode_bar.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
 
-class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
+class EmployeeTasksScreen extends StatefulWidget {
   const EmployeeTasksScreen({Key? key}) : super(key: key);
+
+  @override
+  State<EmployeeTasksScreen> createState() => _EmployeeTasksScreenState();
+}
+
+class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> {
+  final _refreshKey = GlobalKey<RefreshIndicatorState>();
+
+  EmployeeTasksController get controller => Get.find<EmployeeTasksController>();
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +40,7 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
         },
         action: false,
         actions: [
+          DesktopRefreshButton(indicatorKey: _refreshKey),
           _EmployeeTaskAppBarTabs(controller: controller),
           Obx(
             () => IconButton(
@@ -77,6 +89,7 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
         ],
       ),
       body: AppPullToRefresh(
+        indicatorKey: _refreshKey,
         onRefresh: controller.pullToRefresh,
         child: CustomScrollView(
           controller: controller.scrollController,

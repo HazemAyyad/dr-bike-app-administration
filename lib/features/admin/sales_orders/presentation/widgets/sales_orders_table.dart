@@ -154,12 +154,17 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
   ) async {
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+      ),
       showDragHandle: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (_) => SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(14.w, 0, 14.w, 16.h),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             ListTile(

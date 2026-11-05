@@ -29,6 +29,7 @@ class StockProductGridLayout {
 
   static int columnsForContext(BuildContext context) {
     final desktop = DesktopLayout.isDesktop(context);
+    final nativeDesktop = DesktopLayout.isDesktopPlatform;
     final landscape = isPhoneLandscape(context);
     if (landscape && !desktop) {
       return DesktopLayout.gridColumns(
@@ -42,11 +43,11 @@ class StockProductGridLayout {
     }
     return DesktopLayout.gridColumns(
       context,
-      horizontalPadding: 48.w,
+      horizontalPadding: horizontalPaddingForContext(context) * 2,
       minTileWidth: desktop ? 175 : 105,
-      min: desktop ? 4 : 3,
+      min: nativeDesktop ? 1 : (desktop ? 4 : 3),
       max: desktop ? 8 : 3,
-      gap: 8.w,
+      gap: nativeDesktop ? 8 : 8.w,
     );
   }
 
@@ -55,9 +56,10 @@ class StockProductGridLayout {
     required double aspectRatio,
   }) {
     final columns = context == null ? 3 : columnsForContext(context);
+    final desktop = context != null && DesktopLayout.isDesktopPlatform;
     return SliverGridDelegateWithFixedCrossAxisCount(
       crossAxisCount: columns,
-      crossAxisSpacing: 8.w,
+      crossAxisSpacing: desktop ? 8 : 8.w,
       mainAxisSpacing: 4.h,
       childAspectRatio: aspectRatio,
     );
@@ -65,13 +67,15 @@ class StockProductGridLayout {
 
   static double horizontalPaddingForContext(BuildContext context) {
     final desktop = DesktopLayout.isDesktop(context);
+    if (DesktopLayout.isDesktopPlatform) return 16;
     if (isPhoneLandscape(context) && !desktop) return 12;
     return 24.w;
   }
 
   static bool isPhoneLandscape(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
-    return size.width > size.height &&
+    return !DesktopLayout.isDesktopPlatform &&
+        size.width > size.height &&
         size.width < DesktopLayout.desktopMinWidth;
   }
 }

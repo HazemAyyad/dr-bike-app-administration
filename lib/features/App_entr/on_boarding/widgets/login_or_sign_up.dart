@@ -4,8 +4,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/services/theme_service.dart';
+import '../../../../core/helpers/desktop_auth_layout.dart';
 import '../../../../core/utils/app_colors.dart';
 import '../../../../core/utils/assets_manger.dart';
+import '../../../../core/utils/desktop_layout.dart';
 import '../../../../routes/app_routes.dart';
 
 class LoginOrSignUpScreen extends StatelessWidget {
@@ -13,6 +15,35 @@ class LoginOrSignUpScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (DesktopLayout.isDesktopPlatform) {
+      return Scaffold(
+        body: DesktopAuthLayout(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(AssetsManager.onBoardingScreenFour, height: 220),
+              const SizedBox(height: 24),
+              Text(
+                'welcomeToApp'.tr,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+              const SizedBox(height: 24),
+              AppButton(
+                text: 'login',
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                isSafeArea: false,
+                onPressed: () => Get.toNamed(AppRoutes.LOGINSCREEN),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Scaffold(
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 24.w),

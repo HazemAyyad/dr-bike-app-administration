@@ -10,6 +10,7 @@ import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
+import '../../../../../core/widgets/desktop_refresh_button.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/bills_models/bills_model.dart';
 import '../../data/models/return_purchases_models/return_products_model.dart';
@@ -21,8 +22,19 @@ import '../widgets/buying_skeleton_widgets.dart';
 import '../widgets/bills_widgets/bills_list.dart';
 import '../widgets/return_purchases_widgets/return_purchases_list.dart';
 
-class BuyingScreen extends GetView<BillsController> {
+class BuyingScreen extends StatefulWidget {
   const BuyingScreen({Key? key}) : super(key: key);
+
+  @override
+  State<BuyingScreen> createState() => _BuyingScreenState();
+}
+
+class _BuyingScreenState extends State<BuyingScreen> {
+  final _invoiceRefreshKey = GlobalKey<RefreshIndicatorState>();
+  final _orderRefreshKey = GlobalKey<RefreshIndicatorState>();
+  final _returnRefreshKey = GlobalKey<RefreshIndicatorState>();
+
+  BillsController get controller => Get.find<BillsController>();
 
   @override
   Widget build(BuildContext context) {
@@ -49,8 +61,18 @@ class BuyingScreen extends GetView<BillsController> {
                 final tabs = DefaultTabController.of(topBarContext);
                 return AnimatedBuilder(
                   animation: tabs,
-                  builder: (_, __) => _BuyingSearchAction(
-                    activeTab: tabs.index,
+                  builder: (_, __) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DesktopRefreshButton(
+                        indicatorKey: [
+                          _invoiceRefreshKey,
+                          _orderRefreshKey,
+                          _returnRefreshKey,
+                        ][tabs.index],
+                      ),
+                      _BuyingSearchAction(activeTab: tabs.index),
+                    ],
                   ),
                 );
               },
@@ -67,9 +89,9 @@ class BuyingScreen extends GetView<BillsController> {
             Expanded(
               child: TabBarView(
                 children: [
-                  _PurchaseInvoicesTab(),
-                  const _PurchaseOrdersEntryTab(),
-                  const _ReturnPurchasesEntryTab(),
+                  _PurchaseInvoicesTab(refreshKey: _invoiceRefreshKey),
+                  _PurchaseOrdersEntryTab(refreshKey: _orderRefreshKey),
+                  _ReturnPurchasesEntryTab(refreshKey: _returnRefreshKey),
                 ],
               ),
             ),
@@ -322,6 +344,10 @@ class _BuyingPrimaryTabs extends StatelessWidget {
 }
 
 class _PurchaseInvoicesTab extends GetView<BillsController> {
+  const _PurchaseInvoicesTab({required this.refreshKey});
+
+  final GlobalKey<RefreshIndicatorState> refreshKey;
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder<BillsController>(
@@ -333,6 +359,7 @@ class _PurchaseInvoicesTab extends GetView<BillsController> {
             ? _purchaseSections(controller.allBillsSearch)
             : const <_BuyingListSection<BillDataModel>>[];
         return AppPullToRefresh(
+          indicatorKey: refreshKey,
           onRefresh: controller.getBills,
           child: CustomScrollView(
             physics: kRefreshableScrollPhysics,
@@ -782,11 +809,14 @@ class _CountBadge extends StatelessWidget {
 }
 
 class _PurchaseOrdersEntryTab extends GetView<PurchaseOrdersController> {
-  const _PurchaseOrdersEntryTab();
+  const _PurchaseOrdersEntryTab({required this.refreshKey});
+
+  final GlobalKey<RefreshIndicatorState> refreshKey;
 
   @override
   Widget build(BuildContext context) {
     return AppPullToRefresh(
+      indicatorKey: refreshKey,
       onRefresh: controller.getBills,
       child: CustomScrollView(
         physics: kRefreshableScrollPhysics,
@@ -958,11 +988,14 @@ class _PurchaseOrdersEntryTab extends GetView<PurchaseOrdersController> {
 }
 
 class _ReturnPurchasesEntryTab extends GetView<ReturnPurchasesController> {
-  const _ReturnPurchasesEntryTab();
+  const _ReturnPurchasesEntryTab({required this.refreshKey});
+
+  final GlobalKey<RefreshIndicatorState> refreshKey;
 
   @override
   Widget build(BuildContext context) {
     return AppPullToRefresh(
+      indicatorKey: refreshKey,
       onRefresh: controller.getReturnBills,
       child: CustomScrollView(
         physics: kRefreshableScrollPhysics,

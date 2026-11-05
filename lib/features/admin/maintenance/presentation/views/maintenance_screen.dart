@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/widgets/desktop_refresh_button.dart';
+
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/services/initial_bindings.dart';
@@ -13,8 +15,17 @@ import '../widgets/maintenance_data_widget.dart';
 import 'maintenance_qr_scanner_screen.dart';
 import 'new_maintenance_screen.dart';
 
-class MaintenanceScreen extends GetView<MaintenanceController> {
+class MaintenanceScreen extends StatefulWidget {
   const MaintenanceScreen({Key? key}) : super(key: key);
+
+  @override
+  State<MaintenanceScreen> createState() => _MaintenanceScreenState();
+}
+
+class _MaintenanceScreenState extends State<MaintenanceScreen> {
+  final _refreshKey = GlobalKey<RefreshIndicatorState>();
+
+  MaintenanceController get controller => Get.find<MaintenanceController>();
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +34,7 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
         title: 'maintenance',
         action: false,
         actions: [
+          DesktopRefreshButton(indicatorKey: _refreshKey),
           IconButton(
             tooltip: 'مسح فاتورة صيانة',
             icon: const Icon(Icons.qr_code_scanner_rounded),
@@ -75,6 +87,7 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
         ],
       ),
       body: RefreshIndicator(
+        key: _refreshKey,
         color: AppColors.primaryColor,
         onRefresh: () async {
           await Future.wait([

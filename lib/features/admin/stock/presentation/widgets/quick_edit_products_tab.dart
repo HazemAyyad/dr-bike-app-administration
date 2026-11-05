@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/services/initial_bindings.dart';
+import '../../../../../core/utils/desktop_layout.dart';
 import '../../../sales/presentation/utils/product_image_viewer.dart';
 import '../controllers/stock_controller.dart';
 import 'stock_product_grid_layout.dart';
@@ -123,6 +124,7 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
           : controller.quickEditRows.toList();
 
       final isLandscapePhone = StockProductGridLayout.isPhoneLandscape(context);
+      final desktop = DesktopLayout.isDesktopPlatform;
       final viewportHeight = MediaQuery.sizeOf(context).height;
       final rowHeight = isLandscapePhone ? _compactRowHeight : _rowHeight;
       final headingHeight =
@@ -144,6 +146,20 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
               ? _mobileTableWidth
               : _desktopTableWidth;
       final tableWidth = baseTableWidth - (showCost ? 0 : 84);
+      final filters = [
+        _QuickEditFilterChip(
+          selected: !controller.quickEditOnlyUnmarked.value,
+          label: Text('quickEditAll'.tr),
+          onSelected: (_) => controller.quickEditOnlyUnmarked.value = false,
+          compact: isLandscapePhone,
+        ),
+        _QuickEditFilterChip(
+          selected: controller.quickEditOnlyUnmarked.value,
+          label: Text('quickEditUnmarkedToday'.tr),
+          onSelected: (_) => controller.quickEditOnlyUnmarked.value = true,
+          compact: isLandscapePhone,
+        ),
+      ];
 
       return Padding(
         padding: EdgeInsets.fromLTRB(
@@ -155,34 +171,22 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                _QuickEditFilterChip(
-                  selected: !controller.quickEditOnlyUnmarked.value,
-                  label: Text('quickEditAll'.tr),
-                  onSelected: (_) =>
-                      controller.quickEditOnlyUnmarked.value = false,
-                  compact: isLandscapePhone,
-                ),
-                const SizedBox(width: 8),
-                _QuickEditFilterChip(
-                  selected: controller.quickEditOnlyUnmarked.value,
-                  label: Text('quickEditUnmarkedToday'.tr),
-                  onSelected: (_) =>
-                      controller.quickEditOnlyUnmarked.value = true,
-                  compact: isLandscapePhone,
-                ),
-                const Spacer(),
-                IconButton(
-                  tooltip: 'refresh'.tr,
-                  onPressed: () async {
-                    controller.resetQuickEditPagination();
-                    await controller.getQuickEditProducts();
-                  },
-                  icon: const Icon(Icons.refresh),
-                ),
-              ],
-            ),
+            if (desktop)
+              Wrap(spacing: 8, runSpacing: 4, children: filters)
+            else
+              Row(
+                children: [
+                  filters[0],
+                  const SizedBox(width: 8),
+                  filters[1],
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'refresh'.tr,
+                    onPressed: controller.pullToRefresh,
+                    icon: const Icon(Icons.refresh),
+                  ),
+                ],
+              ),
             SizedBox(height: isLandscapePhone ? 4 : 8),
             DecoratedBox(
               decoration: BoxDecoration(
@@ -192,7 +196,8 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: ScrollConfiguration(
-                  behavior: const _QuickEditScrollBehavior(),
+                  behavior: const _QuickEditScrollBehavior()
+                      .copyWith(scrollbars: false),
                   child: Column(
                     children: [
                       SizedBox(
@@ -244,14 +249,18 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
                                         .textTheme
                                         .labelSmall
                                         ?.copyWith(
-                                          fontSize: isLandscapePhone ? 9 : 10,
+                                          fontSize: desktop
+                                              ? 12
+                                              : (isLandscapePhone ? 9 : 10),
                                           fontWeight: FontWeight.w800,
                                         ),
                                     dataTextStyle: Theme.of(context)
                                         .textTheme
                                         .bodySmall
                                         ?.copyWith(
-                                          fontSize: isLandscapePhone ? 10 : 11,
+                                          fontSize: desktop
+                                              ? 13
+                                              : (isLandscapePhone ? 10 : 11),
                                           fontWeight: FontWeight.w600,
                                         ),
                                     columns: [

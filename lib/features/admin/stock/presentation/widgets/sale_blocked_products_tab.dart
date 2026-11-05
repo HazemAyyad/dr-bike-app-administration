@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/errors/expentions.dart';
+import '../../../../../core/utils/desktop_layout.dart';
 import '../../data/models/all_stock_products_model.dart';
 import '../../domain/stock_product_filters.dart';
 import '../controllers/stock_controller.dart';
@@ -11,13 +12,16 @@ import 'product_card.dart';
 import 'stock_product_grid_layout.dart';
 
 class SaleBlockedProductsTab extends StatefulWidget {
-  const SaleBlockedProductsTab({Key? key}) : super(key: key);
+  const SaleBlockedProductsTab({Key? key, required this.refreshVersion})
+      : super(key: key);
+
+  final int refreshVersion;
 
   @override
-  State<SaleBlockedProductsTab> createState() => _SaleBlockedProductsTabState();
+  State<SaleBlockedProductsTab> createState() => SaleBlockedProductsTabState();
 }
 
-class _SaleBlockedProductsTabState extends State<SaleBlockedProductsTab> {
+class SaleBlockedProductsTabState extends State<SaleBlockedProductsTab> {
   final _search = TextEditingController();
   final _rows = <AllStockProductsModel>[];
   Timer? _debounce;
@@ -32,6 +36,17 @@ class _SaleBlockedProductsTabState extends State<SaleBlockedProductsTab> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant SaleBlockedProductsTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.refreshVersion != oldWidget.refreshVersion) refresh();
+  }
+
+  Future<void> refresh() {
+    _debounce?.cancel();
+    return _load();
   }
 
   @override
@@ -106,11 +121,12 @@ class _SaleBlockedProductsTabState extends State<SaleBlockedProductsTab> {
           const SizedBox(height: 12),
           Row(children: [
             Expanded(child: Text('الممنوع من البيع: $_total منتج')),
-            IconButton(
-              tooltip: 'تحديث',
-              onPressed: _loading ? null : () => _load(),
-              icon: const Icon(Icons.refresh),
-            ),
+            if (!DesktopLayout.isDesktopPlatform)
+              IconButton(
+                tooltip: 'refresh'.tr,
+                onPressed: _loading ? null : refresh,
+                icon: const Icon(Icons.refresh),
+              ),
           ]),
           if (_error != null) ...[
             Text(_error!,

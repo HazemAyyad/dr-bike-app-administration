@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/utils/desktop_layout.dart';
+
 import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../routes/app_routes.dart';
@@ -24,8 +26,17 @@ import '../../../sales_returns/presentation/controllers/sales_returns_controller
 import '../../../sales_returns/presentation/widgets/sales_returns_list.dart';
 import '../../../sales_returns/presentation/widgets/sales_returns_toolbar.dart';
 
-class SalesScreen extends GetView<SalesController> {
+class SalesScreen extends StatefulWidget {
   const SalesScreen({Key? key}) : super(key: key);
+
+  @override
+  State<SalesScreen> createState() => _SalesScreenState();
+}
+
+class _SalesScreenState extends State<SalesScreen> {
+  final _refreshKey = GlobalKey<RefreshIndicatorState>();
+
+  SalesController get controller => Get.find<SalesController>();
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +45,12 @@ class SalesScreen extends GetView<SalesController> {
         title: 'sales',
         action: false,
         actions: [
+          if (DesktopLayout.isDesktopPlatform)
+            _SmallSalesAction(
+              tooltip: 'refresh'.tr,
+              onTap: () => _refreshKey.currentState?.show(),
+              icon: Icons.refresh_rounded,
+            ),
           _SalesAppBarTabs(controller: controller),
           Obx(
             () => _SmallSalesAction(
@@ -57,6 +74,7 @@ class SalesScreen extends GetView<SalesController> {
       body: Stack(
         children: [
           AppPullToRefresh(
+            indicatorKey: _refreshKey,
             onRefresh: () async {
               if (controller.currentTab.value == 3) {
                 await Get.find<SalesReturnsController>().loadReturns();

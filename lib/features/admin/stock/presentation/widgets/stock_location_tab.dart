@@ -5,8 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/desktop_scroll_behavior.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/services/initial_bindings.dart';
+import '../../../../../core/utils/desktop_layout.dart';
 import '../../../../../core/widgets/skeleton_loading.dart';
 import '../../data/models/all_stock_products_model.dart';
 import '../../domain/product_location_utils.dart';
@@ -23,6 +25,7 @@ class StockLocationTab extends GetView<StockController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      final desktop = DesktopLayout.isDesktopPlatform;
       final isLandscapePhone = StockProductGridLayout.isPhoneLandscape(context);
       final horizontalPadding = isLandscapePhone ? 12.0 : 16.w;
       final smallGap = isLandscapePhone ? 6.0 : 8.h;
@@ -65,60 +68,70 @@ class StockLocationTab extends GetView<StockController> {
               ),
               SizedBox(height: smallGap),
             ],
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(right: isLandscapePhone ? 6 : 8.w),
-                    child: _LocationChoiceChip(
-                      label: Text('all'.tr),
-                      selected: selectedSectionId == null ||
-                          selectedSectionId.isEmpty,
-                      onSelected: (_) => controller.selectLocationFilter(null),
-                      compact: isLandscapePhone,
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(right: isLandscapePhone ? 6 : 8.w),
-                    child: _LocationChoiceChip(
-                      avatar: const Icon(Icons.location_off_outlined, size: 16),
-                      label: Text('noLocationAssigned'.tr),
-                      selected:
-                          selectedSectionId == kUnassignedStoreSectionFilterId,
-                      onSelected: (_) {
-                        if (selectedSectionId ==
-                            kUnassignedStoreSectionFilterId) {
-                          controller.selectLocationFilter(null);
-                        } else {
-                          controller.selectLocationFilter(
-                            kUnassignedStoreSectionFilterId,
-                          );
-                        }
-                      },
-                      compact: isLandscapePhone,
-                    ),
-                  ),
-                  ...sections.map(
-                    (s) => Padding(
+            ScrollConfiguration(
+              behavior: desktop
+                  ? const DesktopScrollBehavior()
+                  : ScrollConfiguration.of(context),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: desktop ? const EdgeInsets.only(bottom: 10) : null,
+                child: Row(
+                  children: [
+                    Padding(
                       padding:
                           EdgeInsets.only(right: isLandscapePhone ? 6 : 8.w),
                       child: _LocationChoiceChip(
-                        avatar: const Icon(Icons.place_outlined, size: 16),
-                        label: Text(s.name),
-                        selected: selectedSectionId == s.id,
+                        label: Text('all'.tr),
+                        selected: selectedSectionId == null ||
+                            selectedSectionId.isEmpty,
+                        onSelected: (_) =>
+                            controller.selectLocationFilter(null),
+                        compact: isLandscapePhone,
+                      ),
+                    ),
+                    Padding(
+                      padding:
+                          EdgeInsets.only(right: isLandscapePhone ? 6 : 8.w),
+                      child: _LocationChoiceChip(
+                        avatar:
+                            const Icon(Icons.location_off_outlined, size: 16),
+                        label: Text('noLocationAssigned'.tr),
+                        selected: selectedSectionId ==
+                            kUnassignedStoreSectionFilterId,
                         onSelected: (_) {
-                          if (selectedSectionId == s.id) {
+                          if (selectedSectionId ==
+                              kUnassignedStoreSectionFilterId) {
                             controller.selectLocationFilter(null);
                           } else {
-                            controller.selectLocationFilter(s.id);
+                            controller.selectLocationFilter(
+                              kUnassignedStoreSectionFilterId,
+                            );
                           }
                         },
                         compact: isLandscapePhone,
                       ),
                     ),
-                  ),
-                ],
+                    ...sections.map(
+                      (s) => Padding(
+                        padding:
+                            EdgeInsets.only(right: isLandscapePhone ? 6 : 8.w),
+                        child: _LocationChoiceChip(
+                          avatar: const Icon(Icons.place_outlined, size: 16),
+                          label: Text(s.name),
+                          selected: selectedSectionId == s.id,
+                          onSelected: (_) {
+                            if (selectedSectionId == s.id) {
+                              controller.selectLocationFilter(null);
+                            } else {
+                              controller.selectLocationFilter(s.id);
+                            }
+                          },
+                          compact: isLandscapePhone,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             SizedBox(height: sectionGap),
@@ -298,12 +311,13 @@ class _LocationProductsTableState extends State<_LocationProductsTable> {
   @override
   Widget build(BuildContext context) {
     final isLandscapePhone = StockProductGridLayout.isPhoneLandscape(context);
+    final desktop = DesktopLayout.isDesktopPlatform;
     final baseTableWidth = isLandscapePhone ? 760.0 : 890.0;
     final tableWidth = baseTableWidth - (canViewCostPrice ? 0 : 64);
     final columnSpacing = isLandscapePhone ? 6.0 : 8.w;
     final horizontalMargin = isLandscapePhone ? 8.0 : 12.w;
-    final headingFontSize = isLandscapePhone ? 9.0 : 10.sp;
-    final dataFontSize = isLandscapePhone ? 10.0 : 11.sp;
+    final headingFontSize = desktop ? 12.0 : (isLandscapePhone ? 9.0 : 10.sp);
+    final dataFontSize = desktop ? 13.0 : (isLandscapePhone ? 10.0 : 11.sp);
     final rowMinHeight = isLandscapePhone ? 34.0 : 42.0;
     final rowMaxHeight = isLandscapePhone ? 40.0 : 50.0;
     final tableHeight = (MediaQuery.sizeOf(context).height * 0.58).clamp(
@@ -315,7 +329,8 @@ class _LocationProductsTableState extends State<_LocationProductsTable> {
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: ScrollConfiguration(
-        behavior: const _LocationTableScrollBehavior(),
+        behavior:
+            const _LocationTableScrollBehavior().copyWith(scrollbars: false),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/utils/desktop_layout.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/login_controller.dart';
 
@@ -14,49 +15,27 @@ class RememberMe extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            ValueListenableBuilder(
-              valueListenable: controller.isRemember,
-              builder: (context, value, _) {
-                return Checkbox(
-                  activeColor: AppColors.primaryColor,
-                  checkColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                  value: value as bool,
-                  onChanged: (val) =>
-                      controller.isRemember.value = val ?? false,
-                );
-              },
-            ),
-            Text(
-              'rememberMe'.tr,
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: ThemeService.isDark.value
-                        ? AppColors.graywhiteColor
-                        : AppColors.customGreyColor,
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w400,
-                  ),
-            ),
-          ],
-        ),
-        TextButton(
-          style: TextButton.styleFrom(
-            overlayColor: Colors.transparent,
-            splashFactory: NoSplash.splashFactory,
-            padding: EdgeInsets.zero,
+    final desktop = DesktopLayout.isDesktopPlatform;
+    final actions = [
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ValueListenableBuilder(
+            valueListenable: controller.isRemember,
+            builder: (context, value, _) {
+              return Checkbox(
+                activeColor: AppColors.primaryColor,
+                checkColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
+                value: value as bool,
+                onChanged: (val) => controller.isRemember.value = val ?? false,
+              );
+            },
           ),
-          onPressed: () {
-            Get.toNamed(AppRoutes.SIGNUPVERIFYSCREEN);
-          },
-          child: Text(
-            'forgotPassword'.tr,
+          Text(
+            'rememberMe'.tr,
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                   color: ThemeService.isDark.value
                       ? AppColors.graywhiteColor
@@ -65,8 +44,41 @@ class RememberMe extends StatelessWidget {
                   fontWeight: FontWeight.w400,
                 ),
           ),
+        ],
+      ),
+      TextButton(
+        style: TextButton.styleFrom(
+          overlayColor: Colors.transparent,
+          splashFactory: NoSplash.splashFactory,
+          padding: EdgeInsets.zero,
         ),
-      ],
-    );
+        onPressed: () {
+          Get.toNamed(AppRoutes.SIGNUPVERIFYSCREEN);
+        },
+        child: Text(
+          'forgotPassword'.tr,
+          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                color: ThemeService.isDark.value
+                    ? AppColors.graywhiteColor
+                    : AppColors.customGreyColor,
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w400,
+              ),
+        ),
+      ),
+    ];
+    return desktop
+        ? SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: actions,
+            ),
+          )
+        : Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: actions,
+          );
   }
 }

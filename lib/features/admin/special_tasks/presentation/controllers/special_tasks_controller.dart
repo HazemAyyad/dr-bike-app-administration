@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/app_navigation.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
@@ -22,6 +23,7 @@ import 'special_tasks_service.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class SpecialTasksController extends GetxController {
   static const String tasksViewDaily = 'daily';
   static const String tasksViewWeekly = 'weekly';
@@ -54,6 +56,7 @@ class SpecialTasksController extends GetxController {
 
   final isLoading = false.obs;
   final isConvertingTask = false.obs;
+  int _tasksLoadVersion = 0;
 
   EmployeeService get _employeeService {
     AppDependencyRegistry.ensureEmployeeSection();
@@ -215,73 +218,59 @@ class SpecialTasksController extends GetxController {
 //   }
 
   // Get special Tasks
-  Future<void> getSpecialTasks({bool scrollToTodayb = true}) async {
-    // specialTasksService.weeklyTasks.isEmpty ?
-    isLoading(true);
-    //  : null;
-    update(['specialTasksList']);
-    specialTasksService.weeklyTasks.clear();
-    specialTasksService.noDateTasks.clear();
-    specialTasksService.archivedTasks.clear();
-    final weeklyresult = await specialTasksUsecase.call(page: '0');
-    for (var task in weeklyresult) {
-      String dateKey =
-          "${task.startDate.year}-${task.startDate.month.toString().padLeft(2, '0')}-${task.startDate.day.toString().padLeft(2, '0')}";
-      if (specialTasksService.weeklyTasks.containsKey(dateKey)) {
-        if (!specialTasksService.weeklyTasks[dateKey]!
-            .any((t) => t.id == task.id)) {
-          specialTasksService.weeklyTasks[dateKey]!.add(task);
-        }
-      } else {
-        specialTasksService.weeklyTasks[dateKey] = [task];
+  Future<void> getSpecialTasks({
+    bool scrollToTodayb = true,
+    bool showLoading = true,
+  }) async {
+    final version = ++_tasksLoadVersion;
+    if (showLoading) {
+      isLoading(true);
+      update(['specialTasksList']);
+    }
+    try {
+      final weekly = await _loadTasksByDate('0');
+      final undated = await _loadTasksByDate('1');
+      final archived = await _loadTasksByDate('2');
+      if (isClosed || version != _tasksLoadVersion) return;
+      specialTasksService.weeklyTasks.assignAll(weekly);
+      specialTasksService.noDateTasks.assignAll(undated);
+      specialTasksService.archivedTasks.assignAll(archived);
+    } finally {
+      if (!isClosed && version == _tasksLoadVersion) {
+        if (showLoading) isLoading(false);
+        filterLists(false);
       }
     }
-    filteredWeeklyTasks
-        .assignAll(filterByRange(sortByDate(specialTasksService.weeklyTasks)));
-
-    final noDateresult = await specialTasksUsecase.call(page: '1');
-    for (var task in noDateresult) {
-      String dateKey =
-          "${task.startDate.year}-${task.startDate.month.toString().padLeft(2, '0')}-${task.startDate.day.toString().padLeft(2, '0')}";
-      if (specialTasksService.noDateTasks.containsKey(dateKey)) {
-        if (!specialTasksService.noDateTasks[dateKey]!
-            .any((t) => t.id == task.id)) {
-          specialTasksService.noDateTasks[dateKey]!.add(task);
-        }
-      } else {
-        specialTasksService.noDateTasks[dateKey] = [task];
-      }
-    }
-    filteredNoDateTasks.assignAll(sortByDate(specialTasksService.noDateTasks));
-
-    final archivedresult = await specialTasksUsecase.call(page: '2');
-    for (var task in archivedresult) {
-      String dateKey =
-          "${task.startDate.year}-${task.startDate.month.toString().padLeft(2, '0')}-${task.startDate.day.toString().padLeft(2, '0')}";
-      if (specialTasksService.archivedTasks.containsKey(dateKey)) {
-        if (!specialTasksService.archivedTasks[dateKey]!
-            .any((t) => t.id == task.id)) {
-          specialTasksService.archivedTasks[dateKey]!.add(task);
-        }
-      } else {
-        specialTasksService.archivedTasks[dateKey] = [task];
-      }
-    }
-    filteredArchivedTasks.assignAll(
-      filterByRange(sortByDate(specialTasksService.archivedTasks)),
-    );
-
-    isLoading(false);
-    filterLists(false);
     if (scrollToTodayb) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        scrollToToday();
+        if (!isClosed && version == _tasksLoadVersion) scrollToToday();
       });
     }
-    update(['specialTasksList', 'specialPeriodBar']);
   }
 
-  Future<void> pullToRefresh() => getSpecialTasks(scrollToTodayb: true);
+  Future<Map<String, List<SpecialTaskModel>>> _loadTasksByDate(
+      String page) async {
+    final groups = <String, List<SpecialTaskModel>>{};
+    for (final task in await specialTasksUsecase.call(page: page)) {
+      final group = groups.putIfAbsent(dateKeyFrom(task.startDate), () => []);
+      if (!group.any((existing) => existing.id == task.id)) group.add(task);
+    }
+    return groups;
+  }
+
+  Future<void> pullToRefresh({bool preservePosition = false}) async {
+    if (preservePosition && isLoading.value) return;
+    try {
+      await getSpecialTasks(
+        scrollToTodayb: !preservePosition,
+        showLoading: !preservePosition,
+      );
+    } on Failure catch (error) {
+      if (!isClosed) {
+        AppFailureNotice.show(title: 'error'.tr, message: error.errMessage);
+      }
+    }
+  }
 
   final RxBool isGetLoading = false.obs;
 

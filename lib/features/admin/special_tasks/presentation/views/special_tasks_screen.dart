@@ -3,18 +3,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/custom_tab_bar.dart';
+import '../../../../../core/helpers/desktop_scroll_behavior.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/utils/desktop_layout.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/special_tasks_controller.dart';
 import '../widgets/tasks_list.dart';
 
-class SpecialTasksScreen extends GetView<SpecialTasksController> {
+class SpecialTasksScreen extends StatefulWidget {
   const SpecialTasksScreen({Key? key}) : super(key: key);
 
   @override
+  State<SpecialTasksScreen> createState() => _SpecialTasksScreenState();
+}
+
+class _SpecialTasksScreenState extends State<SpecialTasksScreen> {
+  final _refreshKey = GlobalKey<RefreshIndicatorState>();
+
+  @override
   Widget build(BuildContext context) {
+    final controller = Get.find<SpecialTasksController>();
+    final desktop = DesktopLayout.isDesktopPlatform;
     return Scaffold(
       appBar: CustomAppBar(
         title: 'privateTasks',
@@ -22,8 +34,29 @@ class SpecialTasksScreen extends GetView<SpecialTasksController> {
         toDateController: controller.toDateController,
         onPressedFilter: () => controller.filterLists(true),
         action: false,
+        bottom: desktop
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(58),
+                child: AppTabs(
+                  tabs: controller.tabs,
+                  currentTab: controller.currentTab,
+                  changeTab: controller.changeTab,
+                  height: 44,
+                  tabVerticalPadding: 8,
+                  tabHorizontalPadding: 12,
+                  fontSize: 14,
+                  desktopScrollbar: true,
+                ),
+              )
+            : null,
         actions: [
-          _SpecialTaskAppBarTabs(controller: controller),
+          if (!desktop) _SpecialTaskAppBarTabs(controller: controller),
+          if (desktop)
+            IconButton(
+              tooltip: 'refresh'.tr,
+              onPressed: () => _refreshKey.currentState?.show(),
+              icon: const Icon(Icons.refresh_rounded),
+            ),
           Obx(
             () => IconButton(
               tooltip: 'search'.tr,
@@ -42,10 +75,12 @@ class SpecialTasksScreen extends GetView<SpecialTasksController> {
         ],
       ),
       body: AppPullToRefresh(
-        onRefresh: controller.pullToRefresh,
+        indicatorKey: _refreshKey,
+        onRefresh: () => controller.pullToRefresh(preservePosition: desktop),
         child: CustomScrollView(
           controller: controller.scrollController,
           physics: kRefreshableScrollPhysics,
+          scrollBehavior: desktop ? const DesktopScrollBehavior() : null,
           slivers: [
             GetBuilder<SpecialTasksController>(
               id: 'specialSearchBar',
@@ -297,6 +332,7 @@ class _SpecialTasksViewModeBar extends GetView<SpecialTasksController> {
     required bool selected,
     required VoidCallback onTap,
   }) {
+    final desktop = DesktopLayout.isDesktopPlatform;
     final fg = selected
         ? Colors.white
         : ThemeService.isDark.value
@@ -310,8 +346,8 @@ class _SpecialTasksViewModeBar extends GetView<SpecialTasksController> {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          width: 34.w,
-          height: 32.h,
+          width: desktop ? 34 : 34.w,
+          height: desktop ? 32 : 32.h,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected ? AppColors.operationalPurple : Colors.transparent,
@@ -327,12 +363,13 @@ class _SpecialTasksViewModeBar extends GetView<SpecialTasksController> {
     required IconData icon,
     required VoidCallback onTap,
   }) {
+    final desktop = DesktopLayout.isDesktopPlatform;
     return InkWell(
       borderRadius: BorderRadius.circular(8.r),
       onTap: onTap,
       child: SizedBox(
-        width: 30.w,
-        height: 32.h,
+        width: desktop ? 30 : 30.w,
+        height: desktop ? 32 : 32.h,
         child: Icon(
           icon,
           color: AppColors.operationalPurple,

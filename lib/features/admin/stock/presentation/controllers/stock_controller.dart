@@ -1761,7 +1761,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   Future<void> pullToRefresh() async {
-    _resetPaginationForCurrentTab();
     if (isSaleBlockedTab) {
       saleBlockedRefreshVersion.value++;
       return;
@@ -1771,6 +1770,11 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       return;
     }
     if (isQuickEditTab) {
+      if (isQuickEditLoading.value ||
+          isQuickEditLoadingMore.value ||
+          quickEditRows.any((row) => row.isSaving.value)) {
+        return;
+      }
       resetQuickEditPagination();
       await getQuickEditProducts();
       return;
@@ -1782,12 +1786,23 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       return;
     }
     if (currentTab.value == 3) {
-      await ensureStoreSectionsLoaded();
-      if (selectedLocationSectionId.value != null) {
-        await selectLocationFilter(selectedLocationSectionId.value);
+      final sectionId = selectedLocationSectionId.value;
+      await refreshStoreSections();
+      if (currentTab.value == 3 &&
+          sectionId != null &&
+          selectedLocationSectionId.value == sectionId &&
+          !isLoading.value) {
+        await selectLocationFilter(sectionId);
       }
       return;
     }
+    final query = stockSearchActiveQuery.value.trim();
+    if (currentTab.value != 5 && query.isNotEmpty) {
+      if (!isSearchLoading.value) await getSearchProducts(name: query);
+      return;
+    }
+    if (isLoading.value || isLoadingMore.value) return;
+    _resetPaginationForCurrentTab();
     if (currentTab.value == 0) {
       allProducts.clear();
     } else if (currentTab.value == 1) {

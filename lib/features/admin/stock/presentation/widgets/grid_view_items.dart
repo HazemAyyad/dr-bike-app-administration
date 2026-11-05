@@ -15,14 +15,18 @@ import 'stock_results_count_banner.dart';
 import 'stock_skeleton_widgets.dart';
 
 class GridViewItems extends GetView<StockController> {
-  const GridViewItems({Key? key}) : super(key: key);
+  const GridViewItems({Key? key, required this.saleBlockedKey})
+      : super(key: key);
+
+  final GlobalKey<SaleBlockedProductsTabState> saleBlockedKey;
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       if (controller.isSaleBlockedTab) {
         return SliverToBoxAdapter(
           child: SaleBlockedProductsTab(
-            key: ValueKey(controller.saleBlockedRefreshVersion.value),
+            key: saleBlockedKey,
+            refreshVersion: controller.saleBlockedRefreshVersion.value,
           ),
         );
       }

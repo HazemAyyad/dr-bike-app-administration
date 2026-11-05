@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/utils/desktop_layout.dart';
 import '../../../../../core/widgets/skeleton_loading.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/special_tasks_controller.dart';
@@ -359,6 +360,7 @@ class _SpecialTaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
+    final desktop = DesktopLayout.isDesktopPlatform;
     final progress = task.progress.clamp(0, 100);
     final showProgress = progress > 0 && task.status != 'completed';
     final matchedSubtasks = task.matchingSubtaskNames(searchQuery);
@@ -409,7 +411,7 @@ class _SpecialTaskCard extends StatelessWidget {
                       child: Text(
                         displayName,
                         style: TextStyle(
-                          fontSize: 13.sp,
+                          fontSize: desktop ? 15 : 13.sp,
                           fontWeight: FontWeight.w700,
                           height: 1.25,
                           decoration: archived
@@ -431,7 +433,7 @@ class _SpecialTaskCard extends StatelessWidget {
                       Text(
                         '$progress%',
                         style: TextStyle(
-                          fontSize: 10.sp,
+                          fontSize: desktop ? 12 : 10.sp,
                           fontWeight: FontWeight.w700,
                           color: AppColors.operationalPurple,
                         ),
@@ -496,7 +498,7 @@ class _DayHeader extends StatelessWidget {
                         ? AppColors.operationalPurple
                         : AppColors.operationalNavy,
                     fontWeight: FontWeight.w700,
-                    fontSize: 12.sp,
+                    fontSize: DesktopLayout.isDesktopPlatform ? 14 : 12.sp,
                     height: 1.2,
                   ),
                 ),
@@ -511,7 +513,7 @@ class _DayHeader extends StatelessWidget {
                   child: Text(
                     'today'.tr,
                     style: TextStyle(
-                      fontSize: 9.sp,
+                      fontSize: DesktopLayout.isDesktopPlatform ? 11 : 9.sp,
                       fontWeight: FontWeight.w700,
                       color: AppColors.operationalPurple,
                     ),
@@ -554,7 +556,7 @@ class _SubtaskMatchLabel extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 10.sp,
+              fontSize: DesktopLayout.isDesktopPlatform ? 12 : 10.sp,
               height: 1.2,
               fontWeight: FontWeight.w600,
               color: AppColors.operationalPurple,

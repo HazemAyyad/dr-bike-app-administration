@@ -433,7 +433,9 @@ class BuildProductCard extends GetView<StockController> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: isLandscapePhone ? 7 : 6.5.sp,
+                  fontSize: DesktopLayout.isDesktopPlatform
+                      ? 11
+                      : (isLandscapePhone ? 7 : 6.5.sp),
                   fontWeight: FontWeight.w600,
                   height: 1.05,
                 ),

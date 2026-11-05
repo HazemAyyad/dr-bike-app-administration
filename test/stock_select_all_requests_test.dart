@@ -1,5 +1,12 @@
 import 'dart:async';
+import 'package:doctorbike/core/services/initial_bindings.dart';
+import 'package:doctorbike/core/services/translations_service.dart';
+import 'package:doctorbike/features/admin/stock/presentation/views/stock_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 import 'package:doctorbike/features/admin/stock/presentation/controllers/stock_controller.dart';
 import 'package:doctorbike/features/admin/stock/data/datasources/stock_datasource.dart';
 import 'package:doctorbike/features/admin/stock/data/models/all_stock_products_model.dart';
@@ -84,8 +91,76 @@ class _Controller extends StockController {
   }
 }
 
+class _PortraitStockController extends _Controller {
+  _PortraitStockController() {
+    currentTab.value = 0;
+    deleteSelectionActive.value = false;
+  }
+
+  @override
+  void loadStockSearchHistory() {}
+
+  @override
+  Future<void> getAllProducts({bool isRefresh = false}) async {}
+
+  @override
+  Future<void> getCategories() async {}
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('Arabic Stock screen fits a 1080x1920 desktop viewport',
+      (tester) async {
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final previousUserType = userType;
+    userType = 'admin';
+    Get.testMode = true;
+    addTearDown(() {
+      Get.reset();
+      userType = previousUserType;
+    });
+    final controller = Get.put<StockController>(_PortraitStockController());
+    controller.allProducts.assignAll(List.generate(
+      30,
+      (i) => AllStockProductsModel.fromJson({
+        'product_id': i + 1,
+        'name': 'منتج تجريبي ${i + 1}',
+      }),
+    ));
+    await tester.pumpWidget(ScreenUtilInit(
+      designSize: const Size(1600, 1000),
+      fontSizeResolver: (size, _) => size.toDouble(),
+      builder: (_, __) => GetMaterialApp(
+        locale: const Locale('ar'),
+        translations: Translation(),
+        supportedLocales: const [Locale('ar'), Locale('en')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        home: const StockScreen(),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    final grid = find.byType(GridView);
+    final refresh = find.byTooltip('تحديث');
+    expect(refresh.hitTestable(), findsOneWidget);
+    expect(
+        tester.widget<GridView>(grid).gridDelegate,
+        isA<SliverGridDelegateWithFixedCrossAxisCount>()
+            .having((delegate) => delegate.crossAxisCount, 'columns', 5));
+    tester.view.devicePixelRatio = 1.5;
+    await tester.pumpAndSettle();
+    expect(refresh.hitTestable(), findsOneWidget);
+    expect(
+        tester.widget<GridView>(grid).gridDelegate,
+        isA<SliverGridDelegateWithFixedCrossAxisCount>()
+            .having((delegate) => delegate.crossAxisCount, 'columns', 3));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  }, variant: const TargetPlatformVariant({TargetPlatform.windows}));
+
   test('select all stops after a failed page without selecting a partial list',
       () async {
     final controller = _Controller()..fail = true;

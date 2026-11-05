@@ -6,6 +6,7 @@ import '../../../../../core/helpers/admin_ui_colors.dart';
 import '../../../../../core/helpers/app_failure_notice.dart';
 import '../../../../../core/helpers/product_priority_image.dart';
 import '../../../../../core/services/initial_bindings.dart';
+import '../../../../../core/utils/desktop_layout.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/negative_stock_item_model.dart';
 import '../controllers/stock_controller.dart';
@@ -160,12 +161,13 @@ class _Summary extends StatelessWidget {
               ),
             ),
           ),
-          IconButton(
-            onPressed: controller.isNegativeStockLoading.value
-                ? null
-                : controller.loadNegativeStock,
-            icon: const Icon(Icons.refresh),
-          ),
+          if (!DesktopLayout.isDesktopPlatform)
+            IconButton(
+              onPressed: controller.isNegativeStockLoading.value
+                  ? null
+                  : controller.loadNegativeStock,
+              icon: const Icon(Icons.refresh),
+            ),
         ],
       ),
     );

@@ -93,6 +93,20 @@ endif()
 set(INSTALL_BUNDLE_DATA_DIR "${CMAKE_INSTALL_PREFIX}/data")
 set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}")
 
+# Ship the compiler's redistributable CRT alongside the production executable.
+# Windows can then load it even on a machine without Visual C++ installed.
+if(MSVC)
+  set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+  include(InstallRequiredSystemLibraries)
+  if(NOT EXISTS "${MSVC_CRT_DIR}/vcruntime140_1.dll")
+    message(FATAL_ERROR "Install the Visual C++ redistributable files for the selected MSVC toolset.")
+  endif()
+  install(DIRECTORY "${MSVC_CRT_DIR}/"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    CONFIGURATIONS Profile Release COMPONENT Runtime
+    FILES_MATCHING PATTERN "*.dll")
+endif()
+
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
 

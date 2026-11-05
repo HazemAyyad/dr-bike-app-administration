@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/widgets/desktop_refresh_button.dart';
+
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
@@ -15,8 +17,17 @@ import '../ledger/ledger_format.dart';
 import '../ledger/period_filter_sheet.dart';
 import '../ledger/debt_labels_settings_sheet.dart';
 
-class DebtsScreen extends GetView<DebtLedgerController> {
+class DebtsScreen extends StatefulWidget {
   const DebtsScreen({Key? key}) : super(key: key);
+
+  @override
+  State<DebtsScreen> createState() => _DebtsScreenState();
+}
+
+class _DebtsScreenState extends State<DebtsScreen> {
+  final _refreshKey = GlobalKey<RefreshIndicatorState>();
+
+  DebtLedgerController get controller => Get.find<DebtLedgerController>();
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +42,7 @@ class DebtsScreen extends GetView<DebtLedgerController> {
             ThemeService.isDark.value ? Colors.white : Colors.black87,
         elevation: 0,
         actions: [
+          DesktopRefreshButton(indicatorKey: _refreshKey),
           IconButton(
               tooltip: 'كشف حساب',
               onPressed: controller.openPickPersonForDebt,
@@ -51,6 +63,7 @@ class DebtsScreen extends GetView<DebtLedgerController> {
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.w),
         child: AppPullToRefresh(
+          indicatorKey: _refreshKey,
           onRefresh: controller.pullToRefresh,
           child: CustomScrollView(
             physics: kRefreshableScrollPhysics,

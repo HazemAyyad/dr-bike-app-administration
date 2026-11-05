@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/widgets/desktop_refresh_button.dart';
+
 import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../core/services/theme_service.dart';
@@ -13,8 +15,17 @@ import '../widgets/view_boxes.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
 import 'package:intl/intl.dart';
 
-class BoxesScreen extends GetView<BoxesController> {
+class BoxesScreen extends StatefulWidget {
   const BoxesScreen({Key? key}) : super(key: key);
+
+  @override
+  State<BoxesScreen> createState() => _BoxesScreenState();
+}
+
+class _BoxesScreenState extends State<BoxesScreen> {
+  final _refreshKey = GlobalKey<RefreshIndicatorState>();
+
+  BoxesController get controller => Get.find<BoxesController>();
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +37,7 @@ class BoxesScreen extends GetView<BoxesController> {
         onPressedFilter: () => controller.filterLists(),
         action: false,
         actions: [
+          DesktopRefreshButton(indicatorKey: _refreshKey),
           Obx(
             () => IconButton(
               tooltip: 'بحث في الصناديق',
@@ -72,6 +84,7 @@ class BoxesScreen extends GetView<BoxesController> {
         ],
       ),
       body: AppPullToRefresh(
+        indicatorKey: _refreshKey,
         onRefresh: controller.pullToRefresh,
         child: CustomScrollView(
           physics: kRefreshableScrollPhysics,

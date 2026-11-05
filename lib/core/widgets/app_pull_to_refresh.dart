@@ -14,15 +14,18 @@ class AppPullToRefresh extends StatelessWidget {
     required this.onRefresh,
     required this.child,
     this.color,
+    this.indicatorKey,
   }) : super(key: key);
 
   final Future<void> Function() onRefresh;
   final Widget child;
   final Color? color;
+  final GlobalKey<RefreshIndicatorState>? indicatorKey;
 
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
+      key: indicatorKey,
       onRefresh: onRefresh,
       color: color ?? AppColors.primaryColor,
       child: child,

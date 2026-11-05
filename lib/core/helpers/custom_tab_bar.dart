@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../services/theme_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/desktop_layout.dart';
+import 'desktop_scroll_behavior.dart';
 
 class AppTabs extends StatefulWidget {
   const AppTabs({
@@ -22,6 +23,7 @@ class AppTabs extends StatefulWidget {
     this.translateLabels = true,
     this.fitToWidthUpToCount,
     this.tabCounts,
+    this.desktopScrollbar = false,
   }) : super(key: key);
 
   final List<String> tabs;
@@ -37,6 +39,7 @@ class AppTabs extends StatefulWidget {
   final double? fontSize;
   final bool translateLabels;
   final int? fitToWidthUpToCount;
+  final bool desktopScrollbar;
 
   @override
   State<AppTabs> createState() => _AppTabsState();
@@ -65,6 +68,8 @@ class _AppTabsState extends State<AppTabs> {
   @override
   Widget build(BuildContext context) {
     final desktop = DesktopLayout.isDesktop(context);
+    final useDesktopScrollbar =
+        widget.desktopScrollbar && DesktopLayout.isDesktopPlatform;
     final shouldFitToWidth = widget.fitToWidthUpToCount != null &&
         widget.tabs.length <= widget.fitToWidthUpToCount!;
     final tabContainer = Container(
@@ -89,16 +94,21 @@ class _AppTabsState extends State<AppTabs> {
         ],
       ),
     );
-    final tabs = shouldFitToWidth
-        ? tabContainer
-        : SingleChildScrollView(
-            controller: _scrollController,
-            scrollDirection: Axis.horizontal,
-            child: tabContainer,
-          );
-
     if (shouldFitToWidth) {
-      return Center(child: tabs);
+      return Center(child: tabContainer);
+    }
+
+    Widget tabs = SingleChildScrollView(
+      controller: _scrollController,
+      scrollDirection: Axis.horizontal,
+      padding: useDesktopScrollbar ? const EdgeInsets.only(bottom: 10) : null,
+      child: tabContainer,
+    );
+    if (useDesktopScrollbar) {
+      tabs = ScrollConfiguration(
+        behavior: const DesktopScrollBehavior(),
+        child: tabs,
+      );
     }
 
     return Center(

@@ -17,6 +17,7 @@ import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
 import 'core/services/initial_bindings.dart';
 import 'core/theme/themes.dart';
+import 'core/utils/desktop_layout.dart';
 import 'core/utils/screen_util_new.dart';
 
 void main(List<String> args) async {
@@ -118,6 +119,9 @@ class MyApp extends StatelessWidget {
       },
       minTextAdapt: true,
       splitScreenMode: true,
+      fontSizeResolver: DesktopLayout.isDesktopPlatform
+          ? (size, _) => size.toDouble()
+          : FontSizeResolvers.width,
       designSize: designSize,
     );
   }
