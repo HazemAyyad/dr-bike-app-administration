@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart'
@@ -32,7 +31,6 @@ final RxString sessionUserType = ''.obs;
 /// Bumped on impersonation / role switch so bottom nav rebuilds.
 final RxInt sessionEpoch = 0.obs;
 
-RxBool startApp = true.obs;
 bool supabase = true;
 List<int> employeePermissions = [];
 bool employeeCanDelegatePermissions = false;
@@ -587,38 +585,15 @@ class InitialBindings implements Bindings {
     _runAsyncSetup();
   }
 
-  /// تهيئة سريعة فقط — لا تمنع الـ Splash (شارات وFCM تُؤجَّل).
+  /// يكتمل إعداد بدء التشغيل قبل انتقال شاشة البداية.
   static Future<void> _runAsyncSetup() async {
     try {
-      if (kIsWeb) {
-        startApp.value = true;
-      } else if (isDesktopRuntime &&
-          DesktopWindowService.startedAsSecondaryWindow) {
-        startApp.value = true;
-        DesktopWindowService.debugLog(
-          'secondary desktop startup — skipping Firebase remote config',
-        );
-      } else {
+      if (!kIsWeb &&
+          !(isDesktopRuntime && DesktopWindowService.startedAsSecondaryWindow)) {
         await AppBootstrap.initializeMobile();
         if (!isDesktopRuntime) {
           await AppShortcutService.instance.initialize();
           await AppHomeWidgetService.instance.initialize();
-        } else {
-          debugPrint('[Startup] desktop platform — skipping mobile widgets');
-        }
-        try {
-          debugPrint('[Startup] Firestore Test doc start');
-          final doc = await FirebaseFirestore.instance
-              .collection('Test')
-              .doc('Test')
-              .get()
-              .timeout(const Duration(seconds: 5));
-          final bool? value = doc.data()?['Test'] as bool?;
-          startApp.value = value ?? true;
-          debugPrint('[Startup] Firestore Test doc done value=$startApp');
-        } catch (e) {
-          debugPrint('[Startup] Firestore Test doc failed: $e');
-          startApp.value = true;
         }
       }
 

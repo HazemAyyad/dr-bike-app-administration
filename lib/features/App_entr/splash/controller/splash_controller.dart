@@ -36,7 +36,9 @@ class SplashController extends GetxController {
         timeout: const Duration(seconds: 6),
       );
 
-      await Future<void>.delayed(const Duration(milliseconds: 800));
+      if (!DesktopWindowService.isSupported) {
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+      }
 
       final connected = await networkInfo.isConnected
           .timeout(const Duration(seconds: 4), onTimeout: () => true);
