@@ -24,6 +24,7 @@ import '../models/product_tag_model.dart';
 import '../models/quick_edit_product_model.dart';
 import '../models/quick_edit_products_page_result.dart';
 import '../../domain/product_location_utils.dart';
+import '../../domain/inventory_cost_currency.dart';
 import '../../domain/stock_product_filters.dart';
 import '../models/offer_package_model.dart';
 import '../models/products_by_tag_result.dart';
@@ -1859,7 +1860,7 @@ class StockDatasource {
           'reason': reason,
           if (notes != null && notes.isNotEmpty) 'notes': notes,
           if (unitCost != null) 'unit_cost': unitCost,
-          'currency': currency,
+          'currency': inventoryCostCurrency,
         },
       );
       final raw = response.data;
@@ -1907,7 +1908,7 @@ class StockDatasource {
           'new_unit_cost': costPrice,
           'reason': reason,
           if (notes != null && notes.isNotEmpty) 'notes': notes,
-          'currency': currency,
+          'currency': inventoryCostCurrency,
         },
       );
       final raw = response.data;
@@ -1956,7 +1957,7 @@ class StockDatasource {
           'unit_cost': unitCost,
           'reason': reason,
           if (notes != null && notes.isNotEmpty) 'notes': notes,
-          'currency': currency,
+          'currency': inventoryCostCurrency,
           if (referenceOnly) 'reference_only': true,
         },
       );
@@ -2000,7 +2001,7 @@ class StockDatasource {
       'product_id': productId,
       if (sizeColorId != null) 'size_color_id': sizeColorId,
       'unit_cost': unitCost,
-      'currency': currency,
+      'currency': inventoryCostCurrency,
       if (saleIds != null) 'sale_ids': saleIds,
       if (reviewToken != null) 'review_token': reviewToken,
       if (reason != null) 'reason': reason.trim(),

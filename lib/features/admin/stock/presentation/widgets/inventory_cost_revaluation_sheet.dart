@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../../core/helpers/admin_ui_colors.dart';
 import '../../../../../core/helpers/app_failure_notice.dart';
 import '../../../../../core/utils/localized_number.dart';
+import '../../domain/inventory_cost_currency.dart';
 
 class InventoryCostRevaluationResult {
   const InventoryCostRevaluationResult({
@@ -34,7 +35,7 @@ Future<InventoryCostRevaluationResult?> showInventoryCostRevaluationSheet({
       title: title,
       subtitle: subtitle,
       currentUnitCost: currentUnitCost,
-      currency: currency,
+      currency: inventoryCostCurrency,
       initializeMissingCost: initializeMissingCost,
       referenceOnly: referenceOnly,
     ),

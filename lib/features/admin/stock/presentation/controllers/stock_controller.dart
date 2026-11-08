@@ -32,6 +32,7 @@ import '../../data/models/stock_products_page_result.dart';
 import '../../data/models/product_stock_movement_model.dart';
 import '../../data/models/store_section_model.dart';
 import '../../domain/product_location_utils.dart';
+import '../../domain/inventory_cost_currency.dart';
 import '../../domain/stock_location_interactor.dart';
 import '../utils/stock_search_history_storage.dart';
 import '../../domain/stock_product_filters.dart';
@@ -113,7 +114,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final TextEditingController openingUnitCostController =
       TextEditingController();
   final TextEditingController openingCurrencyController =
-      TextEditingController(text: 'NIS');
+      TextEditingController(text: inventoryCostCurrency);
   final TextEditingController openingNotesController = TextEditingController();
   final RxBool addOpeningStock = false.obs;
 
@@ -3022,7 +3023,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     addOpeningStock.value = false;
     openingQuantityController.clear();
     openingUnitCostController.clear();
-    openingCurrencyController.text = 'NIS';
+    openingCurrencyController.text = inventoryCostCurrency;
     openingNotesController.clear();
     isShowProduct.value = true;
     isNewItemProduct.value = true;
@@ -3057,7 +3058,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     addOpeningStock.value = false;
     openingQuantityController.clear();
     openingUnitCostController.clear();
-    openingCurrencyController.text = 'NIS';
+    openingCurrencyController.text = inventoryCostCurrency;
     openingNotesController.clear();
     if (mainCategories.isEmpty || allSubCategories.isEmpty) {
       await getCategories();
@@ -3290,9 +3291,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       addField('opening_stock', '1');
       addField(
         'opening_currency',
-        openingCurrencyController.text.trim().isEmpty
-            ? 'NIS'
-            : openingCurrencyController.text.trim(),
+        inventoryCostCurrency,
       );
       if (openingNotesController.text.trim().isNotEmpty) {
         addField('opening_notes', openingNotesController.text.trim());
@@ -3391,9 +3390,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           );
           addField(
             'sizes[$sizeIndex][color_sizes][$j][opening_currency]',
-            openingCurrencyController.text.trim().isEmpty
-                ? 'NIS'
-                : openingCurrencyController.text.trim(),
+            inventoryCostCurrency,
           );
         }
         final cid = c.dbColorId;

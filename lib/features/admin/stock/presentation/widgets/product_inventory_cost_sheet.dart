@@ -10,6 +10,7 @@ import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../data/datasources/stock_datasource.dart';
 import '../../data/models/product_details_model.dart';
+import '../../domain/inventory_cost_currency.dart';
 import 'inventory_cost_revaluation_sheet.dart';
 import 'stock_variant_adjust_sheet.dart';
 import 'missing_sales_cost_sheet.dart';
@@ -105,11 +106,10 @@ class _ProductInventoryCostSheetState
 
     String? sizeColorId;
     String? subtitle;
-    var currency = inventory.currency;
+    const currency = inventoryCostCurrency;
     var missingQuantity = inventory.missingCostQuantity;
     var referenceOnly = inventory.quantityOnHand <= 0.0001;
     double? referenceCost = inventory.referenceUnitCost;
-    if (referenceOnly) currency = inventory.referenceCostCurrency ?? currency;
 
     if (inventory.hasVariants) {
       final target = await showStockVariantAdjustSheet(
@@ -131,11 +131,9 @@ class _ProductInventoryCostSheetState
       }
       sizeColorId = target.sizeColorId;
       subtitle = target.subtitle;
-      currency = identity.currency;
       missingQuantity = identity.missingCostQuantity;
       referenceOnly = identity.quantityOnHand <= 0.0001;
       referenceCost = identity.referenceUnitCost;
-      if (referenceOnly) currency = identity.referenceCostCurrency ?? currency;
     }
 
     final result = await showInventoryCostRevaluationSheet(

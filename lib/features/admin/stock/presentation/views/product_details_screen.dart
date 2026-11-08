@@ -15,6 +15,7 @@ import '../widgets/product_inline_video.dart';
 import '../widgets/show_wholesale_prices.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/product_details_model.dart';
+import '../../domain/inventory_cost_currency.dart';
 import '../widgets/product_location_badge.dart';
 import '../widgets/product_screen_shared_widgets.dart';
 import '../widgets/product_stock_movements_link.dart';
@@ -399,7 +400,7 @@ class ProductDetailsScreen extends GetView<StockController> {
         title: product.nameAr,
         subtitle: target.subtitle,
         currentStock: target.currentStock,
-        currency: product.inventory?.currency ?? 'شيكل',
+        currency: inventoryCostCurrency,
       );
       if (pick == null) return;
       await controller.adjustProductStock(
@@ -409,7 +410,7 @@ class ProductDetailsScreen extends GetView<StockController> {
         reason: pick.reason,
         notes: pick.notes,
         unitCost: pick.unitCost,
-        currency: product.inventory?.currency ?? 'شيكل',
+        currency: inventoryCostCurrency,
       );
       return;
     }
@@ -419,7 +420,7 @@ class ProductDetailsScreen extends GetView<StockController> {
       context: context,
       title: product.nameAr,
       currentStock: stock,
-      currency: product.inventory?.currency ?? 'شيكل',
+      currency: inventoryCostCurrency,
     );
     if (pick == null) return;
     await controller.adjustProductStock(
@@ -428,7 +429,7 @@ class ProductDetailsScreen extends GetView<StockController> {
       reason: pick.reason,
       notes: pick.notes,
       unitCost: pick.unitCost,
-      currency: product.inventory?.currency ?? 'شيكل',
+      currency: inventoryCostCurrency,
     );
   }
 
@@ -439,14 +440,12 @@ class ProductDetailsScreen extends GetView<StockController> {
     String? sizeColorId;
     String? subtitle;
     double? currentCost = product.inventory?.averageUnitCost;
-    var currency = product.inventory?.currency ?? 'شيكل';
+    const currency = inventoryCostCurrency;
     var initializeMissingCost =
         (product.inventory?.missingCostQuantity ?? 0) > 0.0001;
-    var referenceOnly =
-        (product.inventory?.quantityOnHand ?? 0) <= 0.0001;
+    var referenceOnly = (product.inventory?.quantityOnHand ?? 0) <= 0.0001;
     if (referenceOnly) {
       currentCost = product.inventory?.referenceUnitCost;
-      currency = product.inventory?.referenceCostCurrency ?? currency;
     }
     if (_productHasVariants(product)) {
       final target = await showStockVariantAdjustSheet(
@@ -460,12 +459,10 @@ class ProductDetailsScreen extends GetView<StockController> {
           in product.inventory?.variants ?? <InventoryIdentitySummary>[]) {
         if (variant.sizeColorId == sizeColorId) {
           currentCost = variant.averageUnitCost;
-          currency = variant.currency;
           initializeMissingCost = variant.missingCostQuantity > 0.0001;
           referenceOnly = variant.quantityOnHand <= 0.0001;
           if (referenceOnly) {
             currentCost = variant.referenceUnitCost;
-            currency = variant.referenceCostCurrency ?? currency;
           }
           break;
         }

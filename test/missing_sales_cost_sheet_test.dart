@@ -20,6 +20,24 @@ void main() {
   setUp(() => Get.testMode = true);
   tearDown(Get.reset);
 
+  testWidgets('legacy mixed input reviews costs in shekels only',
+      (tester) async {
+    final ds = _Datasource(empty: true);
+    await _open(tester, ds, currency: 'mixed');
+    expect(find.text('mixed'), findsNothing);
+    expect(
+        find.byWidgetPredicate(
+            (widget) => widget is DropdownButtonFormField<String>),
+        findsNothing);
+    await tester.enterText(find.byType(TextField).at(0), '1');
+    await tester.enterText(find.byType(TextField).at(1), 'تصحيح');
+    await tester.tap(find.text('مراجعة المبيعات'));
+    await tester.pumpAndSettle();
+    expect(ds.currency, 'شيكل');
+    await tester.tap(find.text('إلغاء'));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('review never applies until user selects a sale and confirms',
       (tester) async {
     final ds = _Datasource();
@@ -96,7 +114,8 @@ void main() {
   });
 }
 
-Future<void> _open(WidgetTester tester, _Datasource ds) async {
+Future<void> _open(WidgetTester tester, _Datasource ds,
+    {String currency = 'شيكل'}) async {
   tester.view.physicalSize = const Size(390, 900);
   tester.view.devicePixelRatio = 1;
   addTearDown(() {
@@ -118,6 +137,7 @@ Future<void> _open(WidgetTester tester, _Datasource ds) async {
                   builder: (_) => MissingSalesCostSheet(
                       productId: '962',
                       productName: 'اكس مطور كبير تفصيل',
+                      currency: currency,
                       datasource: ds),
                 ),
             child: const Text('open')),
@@ -134,6 +154,7 @@ class _Datasource implements StockDatasource {
   final applied = Completer<Map<String, dynamic>>();
   int previews = 0;
   int applications = 0;
+  String? currency;
   List<int>? ids;
   String? token;
 
@@ -147,6 +168,7 @@ class _Datasource implements StockDatasource {
     String? reviewToken,
     String? reason,
   }) async {
+    this.currency = currency;
     if (saleIds != null) {
       applications++;
       ids = saleIds;

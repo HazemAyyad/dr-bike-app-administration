@@ -151,6 +151,7 @@ class _OpeningStockSection extends StatelessWidget {
                     width: 105.w,
                     child: TextField(
                       controller: controller.openingCurrencyController,
+                      readOnly: true,
                       decoration: const InputDecoration(
                           labelText: 'العملة', border: OutlineInputBorder()),
                     ),

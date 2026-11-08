@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../../core/helpers/admin_ui_colors.dart';
 import '../../../../../core/helpers/app_failure_notice.dart';
+import '../../domain/inventory_cost_currency.dart';
 
 class StockQuickAdjustResult {
   final int actualQuantity;
@@ -33,7 +34,7 @@ Future<StockQuickAdjustResult?> showStockQuickAdjustSheet({
       title: title,
       subtitle: subtitle,
       currentStock: currentStock,
-      currency: currency,
+      currency: inventoryCostCurrency,
     ),
   );
 }

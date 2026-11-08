@@ -6,6 +6,7 @@ import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/utils/localized_number.dart';
 import '../../data/datasources/stock_datasource.dart';
 import '../../data/models/product_details_model.dart';
+import '../../domain/inventory_cost_currency.dart';
 import 'stock_variant_adjust_sheet.dart';
 
 Future<bool?> showMissingSalesCostSheet({
@@ -14,7 +15,6 @@ Future<bool?> showMissingSalesCostSheet({
 }) async {
   String? variantId;
   String? variantLabel;
-  var currency = product.inventory?.currency ?? 'شيكل';
   if (product.inventory?.hasVariants == true ||
       (product.sizes ?? <Size>[])
           .any((size) => (size.colorSizes ?? <ColorSize>[]).isNotEmpty)) {
@@ -23,10 +23,6 @@ Future<bool?> showMissingSalesCostSheet({
     if (target == null || !context.mounted) return null;
     variantId = target.sizeColorId;
     variantLabel = target.subtitle;
-    currency = product.inventory?.variants
-            .firstWhereOrNull((variant) => variant.sizeColorId == variantId)
-            ?.currency ??
-        currency;
   }
   if (!context.mounted) return null;
   AppDependencyRegistry.ensureStock();
@@ -40,7 +36,7 @@ Future<bool?> showMissingSalesCostSheet({
         productName: product.nameAr,
         variantId: variantId,
         variantLabel: variantLabel,
-        currency: currency == 'mixed' ? 'شيكل' : currency,
+        currency: inventoryCostCurrency,
         datasource: Get.find<StockDatasource>()),
   );
 }
@@ -72,7 +68,7 @@ class _MissingSalesCostSheetState extends State<MissingSalesCostSheet> {
   Map<String, dynamic>? _preview;
   bool _busy = false;
   String? _error;
-  late String _currency = widget.currency;
+  static const _currency = inventoryCostCurrency;
   List<Map<String, dynamic>> get _sales => (_preview?['sales'] as List? ?? [])
       .whereType<Map>()
       .map((row) => Map<String, dynamic>.from(row))
@@ -120,20 +116,13 @@ class _MissingSalesCostSheetState extends State<MissingSalesCostSheet> {
                           enabled: !_busy && _preview == null,
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                               labelText: 'تكلفة الوحدة',
                               suffixText: _currency)),
-                      DropdownButtonFormField<String>(
-                          initialValue: _currency,
-                          items: ['شيكل', 'دولار', 'دينار']
-                              .map((c) =>
-                                  DropdownMenuItem(value: c, child: Text(c)))
-                              .toList(),
-                          onChanged: _busy || _preview != null
-                              ? null
-                              : (value) => setState(() => _currency = value!),
+                      const InputDecorator(
                           decoration:
-                              const InputDecoration(labelText: 'عملة التكلفة')),
+                              InputDecoration(labelText: 'عملة التكلفة'),
+                          child: Text(_currency)),
                       TextField(
                           controller: _reason,
                           enabled: !_busy,
