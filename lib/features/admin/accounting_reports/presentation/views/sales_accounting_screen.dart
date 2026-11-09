@@ -287,7 +287,7 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
                     controlAffinity: ListTileControlAffinity.leading,
                     title: const Text('نقدي'),
                     subtitle: const Text(
-                        'فواتير مدفوعة بالكامل ومرتجعات مستردة نقدًا بالكامل'),
+                        'مبيعات مدفوعة بالكامل ومرتجعات مستردة نقدًا بالكامل'),
                     value: c.cashOnly,
                     onChanged: busy
                         ? null
@@ -512,7 +512,7 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
       {Map<String, dynamic>? summaryOverride}) {
     final summary = summaryOverride ?? c.summary;
     final items = <String, String>{
-      'عدد الفواتير': '${(summary['invoice_count'] as num?)?.toInt() ?? 0}',
+      'عدد عمليات البيع': '${(summary['invoice_count'] as num?)?.toInt() ?? 0}',
       'المبيعات بعد الخصم':
           SalesAccountingController.amount(summary['sales_total']),
       'خصم المبيعات':

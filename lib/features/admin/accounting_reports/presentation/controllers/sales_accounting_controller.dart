@@ -323,7 +323,7 @@ class SalesAccountingController extends GetxController {
   Map<String, String> get activeSummaryCardsForDocument =>
       summaryCards(summary);
   Map<String, String> summaryCards(Map<String, dynamic> summary) => {
-        'عدد الفواتير': '${summary['invoice_count'] ?? 0}',
+        'عدد عمليات البيع': '${summary['invoice_count'] ?? 0}',
         'المبيعات بعد الخصم': amount(summary['sales_total']),
         'خصم المبيعات': amount(summary['sales_discount']),
         if (returnsVisible) ...{
