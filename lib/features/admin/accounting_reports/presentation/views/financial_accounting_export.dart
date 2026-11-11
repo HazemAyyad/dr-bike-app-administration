@@ -69,6 +69,11 @@ class FinancialAccountingExport {
       currency: c.appliedCurrency,
       columns: c.columns,
       rows: data(c),
+      subtotalRows: {
+        for (final entry in c.rows.asMap().entries)
+          if (entry.value['subtotal'] == true)
+            entry.key + (c.openingVisible ? 1 : 0),
+      },
       summary: c.summaryCards,
       notes: c.notes,
       selection: c.isExpenses

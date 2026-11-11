@@ -15,6 +15,7 @@ class AccountingReportDocument {
     required this.summary,
     required this.notes,
     required this.selection,
+    this.subtotalRows = const {},
   }) : generatedAt = DateTime.now();
   final String kind;
   final String title;
@@ -26,6 +27,7 @@ class AccountingReportDocument {
   final Map<String, String> summary;
   final List<String> notes;
   final String selection;
+  final Set<int> subtotalRows;
   final DateTime generatedAt;
   PdfPageFormat get pageFormat =>
       columns.length > 6 ? PdfPageFormat.a4.landscape : PdfPageFormat.a4;
@@ -171,14 +173,16 @@ class AccountingReportPdf {
             headerStyle:
                 pw.TextStyle(font: bold, fontSize: 9, color: PdfColors.white),
             cellStyle: const pw.TextStyle(fontSize: 8),
-            // The header is row 0; the last data row contains the totals.
-            cellDecoration: (_, __, row) => row == data.rows.length
-                ? pw.BoxDecoration(color: PdfColor.fromHex('#E5E7EB'))
-                : const pw.BoxDecoration(),
-            textStyleBuilder: (_, __, row) => row == data.rows.length
-                ? pw.TextStyle(
-                    font: bold, fontSize: 8, color: PdfColors.grey900)
-                : null,
+            // Table indices include the header at row 0.
+            cellDecoration: (_, __, row) =>
+                row == data.rows.length || data.subtotalRows.contains(row - 1)
+                    ? pw.BoxDecoration(color: PdfColor.fromHex('#E5E7EB'))
+                    : const pw.BoxDecoration(),
+            textStyleBuilder: (_, __, row) =>
+                row == data.rows.length || data.subtotalRows.contains(row - 1)
+                    ? pw.TextStyle(
+                        font: bold, fontSize: 8, color: PdfColors.grey900)
+                    : null,
             headerDecoration: pw.BoxDecoration(color: brand),
             oddRowDecoration:
                 pw.BoxDecoration(color: PdfColor.fromHex('#F9FAFB')),

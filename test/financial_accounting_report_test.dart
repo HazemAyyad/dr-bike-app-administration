@@ -89,6 +89,54 @@ void main() {
     expect(c.summaryCards['صافي الربح / الخسارة'], '460.00');
   });
 
+  test('income exports include the inventory breakdown and expense links',
+      () async {
+    final api = _FinancialApi()
+      ..statementRows = [
+        {
+          'section': 'cost',
+          'label': 'بضاعة أول المدة',
+          'debit': null,
+          'credit': null,
+          'balance': null,
+        },
+        {
+          'section': 'cost',
+          'label': 'مجموع تكلفة المبيعات',
+          'debit': 500,
+          'credit': 0,
+          'balance': 500,
+          'subtotal': true,
+        },
+        {
+          'key': 'electricity',
+          'section': 'expense',
+          'label': 'الكهرباء',
+          'debit': 40,
+          'credit': 0,
+          'balance': 40,
+        },
+      ];
+    final controller = FinancialAccountingController(
+        service: FinancialAccountingApiService(api: api),
+        type: 'income',
+        savedFilters: _filters);
+    controller.onInit();
+    await Future<void>.delayed(Duration.zero);
+
+    final document = FinancialAccountingExport.document(controller);
+    expect(document.rows.first,
+        ['تكلفة المبيعات', 'بضاعة أول المدة', '—', '—', '—']);
+    expect(document.subtotalRows, {1});
+    expect(document.rows.last, contains('460.00'));
+    expect(FinancialAccountingExport.buildCsv(controller),
+        contains('مجموع تكلفة المبيعات'));
+    expect(controller.expenseDrilldown(controller.rows.last)['category_key'],
+        'electricity');
+    final pdf = await FinancialAccountingExport.buildPdf(controller);
+    expect(String.fromCharCodes(pdf.take(4)), '%PDF');
+  });
+
   test('network errors clear stale balances and invalid ranges send no request',
       () async {
     final api = _FinancialApi();
@@ -210,6 +258,7 @@ class _FinancialApi extends Fake implements ApiConsumer {
   int calls = 0;
   int detailCalls = 0;
   Map<String, dynamic>? request;
+  List<Map<String, dynamic>>? statementRows;
   @override
   Future<dynamic> get(String path,
       {Object? data,
@@ -245,6 +294,7 @@ class _FinancialApi extends Fake implements ApiConsumer {
           'include_opening': queryParameters['include_opening'] == 1
         },
         'currency': queryParameters['currency'],
+        if (!expenses && statementRows != null) 'statement_rows': statementRows,
         'summary': expenses
             ? {
                 'opening_balance': 100,

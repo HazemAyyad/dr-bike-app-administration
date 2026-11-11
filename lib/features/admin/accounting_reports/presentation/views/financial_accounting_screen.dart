@@ -462,13 +462,15 @@ class FinancialAccountingScreen extends GetView<FinancialAccountingController> {
                         itemCount: rows.length,
                         itemBuilder: (_, i) => line(
                               c.cells(rows[i]),
+                              total: rows[i]['subtotal'] == true,
                               alternate: i.isOdd,
                               onTap: c.isExpenses &&
                                       rows[i]['detail_key'] != null
                                   ? () => _detail(
                                       context, c, '${rows[i]['detail_key']}')
                                   : !c.isExpenses &&
-                                          rows[i]['section'] == 'expense'
+                                          rows[i]['section'] == 'expense' &&
+                                          rows[i]['key'] != null
                                       ? () => Get.toNamed(
                                           AppRoutes.EXPENSEACCOUNTINGSCREEN,
                                           arguments:

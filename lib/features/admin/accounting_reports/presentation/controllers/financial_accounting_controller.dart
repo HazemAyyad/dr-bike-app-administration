@@ -25,7 +25,9 @@ class FinancialAccountingController extends GetxController {
   String? error;
   Map<String, dynamic>? report;
   static const sectionNames = {
+    'sales': 'المبيعات',
     'revenue': 'الإيرادات',
+    'other_revenue': 'إيرادات أخرى',
     'sales_returns': 'مردودات المبيعات',
     'cost': 'تكلفة المبيعات',
     'expense': 'المصاريف',
@@ -86,7 +88,12 @@ class FinancialAccountingController extends GetxController {
       .whereType<Map>()
       .map((e) => Map<String, dynamic>.from(e))
       .toList(growable: false);
-  List<Map<String, dynamic>> get rows => maps(report?['rows']);
+  List<Map<String, dynamic>> get rows {
+    final baseRows = report?['rows'];
+    return maps(
+        isExpenses ? baseRows : (report?['statement_rows'] ?? baseRows));
+  }
+
   List<Map<String, dynamic>> get categories => maps(report?['categories']);
   List<Map<String, dynamic>> get boxes => maps(report?['boxes']);
   List<String> get notes =>
