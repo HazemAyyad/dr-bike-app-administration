@@ -154,11 +154,13 @@ void main() {
     expect(api.calls, calls);
   });
 
-  testWidgets('section keeps all three reports available', (tester) async {
+  testWidgets('section keeps all accounting reports available', (tester) async {
     await tester
         .pumpWidget(const GetMaterialApp(home: AccountingReportsScreen()));
     expect(find.text('إجمالي المبيعات'), findsOneWidget);
     expect(find.text('كشف حركات المصاريف'), findsOneWidget);
+    expect(find.text('كشف حساب'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('قائمة الدخل المفصّلة'), 200);
     expect(find.text('قائمة الدخل المفصّلة'), findsOneWidget);
   });
 

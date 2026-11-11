@@ -34,6 +34,11 @@ class AccountingReportsScreen extends StatelessWidget {
                     Icons.receipt_long_outlined,
                     AppRoutes.EXPENSEACCOUNTINGSCREEN),
                 _card(
+                    'كشف حساب',
+                    'للزبون أو المورد، مع المدين والدائن والرصيد المدوّر.',
+                    Icons.account_balance_wallet_outlined,
+                    AppRoutes.PARTYACCOUNTSTATEMENTSCREEN),
+                _card(
                     'قائمة الدخل المفصّلة',
                     'الإيرادات وتكلفة المبيعات وتفصيل المصاريف وصافي الربح أو الخسارة.',
                     Icons.account_balance_outlined,

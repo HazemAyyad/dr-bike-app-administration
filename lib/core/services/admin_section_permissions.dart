@@ -53,6 +53,7 @@ class AdminSectionPermissions {
 
   static const Map<String, String> routeSections = {
     AppRoutes.ACCOUNTINGREPORTSSCREEN: 'accounting',
+    AppRoutes.PARTYACCOUNTSTATEMENTSCREEN: 'accounting',
     AppRoutes.ACTIVITYLOGSCREEN: 'employees',
     AppRoutes.ADDCOMBINATIONSCREEN: 'stock',
     AppRoutes.ADDEDITADMINSCREEN: 'manager',
