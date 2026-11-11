@@ -331,6 +331,7 @@ class ChecksController extends GetxController
   bool _pendingCheckDialogOpened = false;
 
   final isLoading = false.obs;
+  bool _isCashingToBox = false;
   final isBulkSelectionMode = false.obs;
   final RxSet<int> selectedBulkCheckIds = <int>{}.obs;
 
@@ -1252,48 +1253,44 @@ class ChecksController extends GetxController
   }
 
   // cash to box
-  void chashToBox({required String checkId, required String boxId}) async {
-    if (!await _ensureCheckOwnerPhone(checkId, 'cashed')) return;
+  Future<void> chashToBox(
+      {required String checkId, required String boxId}) async {
+    if (_isCashingToBox) return;
+    _isCashingToBox = true;
     isLoading(true);
-    final result = await chashToBoxUsecase.chashToBox(
-      checkId: checkId,
-      boxId: boxId,
-      isInComing: isInComing,
-    );
-    result.fold(
-      (failure) {
-        isLoading(false);
-        update();
-
-        AppFailureNotice.show(
-          title: 'error'.tr,
-          message: failure.errMessage,
-        );
-      },
-      (success) async {
-        Get.back();
-        await Future.wait([
-          getGeneralChecksData(),
-          // generalData(),
-          getCashedToPerson(),
-          getNotCashed(),
-          getArchive(),
-        ]);
-        // Future.delayed(
-        //   const Duration(milliseconds: 1500),
-        //   () {
-        //     Get.back();
-        //   },
-        // );
-        AppSuccessNotice.show(
-          title: 'success'.tr,
-          message: success,
-        );
-      },
-    );
-
-    isLoading(false);
-    update();
+    try {
+      if (!await _ensureCheckOwnerPhone(checkId, 'cashed')) return;
+      final result = await chashToBoxUsecase.chashToBox(
+        checkId: checkId,
+        boxId: boxId,
+        isInComing: isInComing,
+      );
+      await result.fold<Future<void>>(
+        (failure) async {
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: failure.errMessage,
+          );
+        },
+        (success) async {
+          Get.back();
+          await Future.wait([
+            getGeneralChecksData(),
+            getCashedToPerson(isStopLoding: false),
+            getNotCashed(isStopLoding: false),
+            getArchive(isStopLoding: false),
+          ]);
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: success,
+          );
+        },
+      );
+    } finally {
+      _isCashingToBox = false;
+      isLoading(false);
+      update();
+    }
   }
 
   Future<void> partialSettleOutgoingCheck({
@@ -1442,37 +1439,42 @@ class ChecksController extends GetxController
 
   Future<void> bulkChashToBox({required String boxId}) async {
     final ids = selectedBulkCheckIds.map((e) => e.toString()).toList();
-    if (ids.isEmpty) return;
+    if (ids.isEmpty || _isCashingToBox) return;
+    _isCashingToBox = true;
     isLoading(true);
-    String? failureMessage;
-    String? successMessage;
-    var processed = 0;
-    for (final id in ids) {
-      final result = await chashToBoxUsecase.chashToBox(
-        checkId: id,
-        boxId: boxId,
-        isInComing: isInComing,
-      );
-      result.fold(
-        (failure) => failureMessage = failure.errMessage,
-        (success) {
-          successMessage = success;
-          processed++;
-        },
-      );
-      if (failureMessage != null) break;
+    try {
+      String? failureMessage;
+      String? successMessage;
+      var processed = 0;
+      for (final id in ids) {
+        final result = await chashToBoxUsecase.chashToBox(
+          checkId: id,
+          boxId: boxId,
+          isInComing: isInComing,
+        );
+        result.fold(
+          (failure) => failureMessage = failure.errMessage,
+          (success) {
+            successMessage = success;
+            processed++;
+          },
+        );
+        if (failureMessage != null) break;
+      }
+      Get.back();
+      clearBulkSelection();
+      await Future.wait([
+        getGeneralChecksData(),
+        getCashedToPerson(isStopLoding: false),
+        getNotCashed(isStopLoding: false),
+        getArchive(isStopLoding: false),
+      ]);
+      _showBulkActionResult(failureMessage, successMessage, processed);
+    } finally {
+      _isCashingToBox = false;
+      isLoading(false);
+      update();
     }
-    Get.back();
-    clearBulkSelection();
-    await Future.wait([
-      getGeneralChecksData(),
-      getCashedToPerson(isStopLoding: false),
-      getNotCashed(isStopLoding: false),
-      getArchive(isStopLoding: false),
-    ]);
-    isLoading(false);
-    _showBulkActionResult(failureMessage, successMessage, processed);
-    update();
   }
 
   // delete check
