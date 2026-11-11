@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../../routes/app_routes.dart';
+import 'sales_purchases_expenses_report_screen.dart';
 
 class AccountingReportsScreen extends StatelessWidget {
   const AccountingReportsScreen({Key? key}) : super(key: key);
@@ -22,6 +23,11 @@ class AccountingReportsScreen extends StatelessWidget {
                     'حسب الزبون أو الشهر أو اليوم، مع الخصومات والمرتجعات والنسب.',
                     Icons.bar_chart_rounded,
                     AppRoutes.SALESACCOUNTINGSCREEN),
+                _card(
+                    SalesPurchasesExpensesReportScreen.title,
+                    'تفصيل يومي أو إجمالي للفترة المختارة.',
+                    Icons.table_chart_outlined,
+                    AppRoutes.SALESPURCHASESEXPENSESREPORTSCREEN),
                 _card(
                     'كشف حركات المصاريف',
                     'الحركات والسندات والرصيد المدور، حسب المصروف والصندوق والفترة.',

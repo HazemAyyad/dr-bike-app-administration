@@ -174,6 +174,8 @@ class AppRoutes {
   static const REPORTSSCREEN = '/ReportsScreen';
   static const ACCOUNTINGREPORTSSCREEN = '/AccountingReportsScreen';
   static const SALESACCOUNTINGSCREEN = '/AccountingSalesScreen';
+  static const SALESPURCHASESEXPENSESREPORTSCREEN =
+      '/SalesPurchasesExpensesReportScreen';
   static const EXPENSEACCOUNTINGSCREEN = '/AccountingExpensesScreen';
   static const INCOMEACCOUNTINGSCREEN = '/AccountingIncomeScreen';
   static const REPORTDETAILSCREEN = '/ReportDetailScreen';

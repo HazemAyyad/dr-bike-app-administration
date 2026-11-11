@@ -94,6 +94,10 @@ import '../features/admin/accounting_reports/presentation/views/sales_accounting
 import '../features/admin/accounting_reports/presentation/views/accounting_reports_screen.dart';
 import '../features/admin/accounting_reports/presentation/views/financial_accounting_screen.dart';
 import '../features/admin/accounting_reports/presentation/bindings/financial_accounting_binding.dart';
+import '../features/admin/accounting_reports/data/financial_accounting_api_service.dart';
+import '../features/admin/accounting_reports/presentation/views/sales_purchases_expenses_report_screen.dart';
+import '../core/databases/api/dio_consumer.dart';
+import '../core/services/app_dependency_registry.dart';
 import '../features/admin/reports/presentation/views/reports_screen.dart';
 import '../features/admin/create_tasks/presentation/binding/create_task_binding.dart';
 import '../features/admin/create_tasks/presentation/binding/task_recurrence_binding.dart';
@@ -1413,6 +1417,13 @@ class AppPages {
       name: AppRoutes.SALESACCOUNTINGSCREEN,
       page: () => const SalesAccountingScreen(),
       binding: SalesAccountingBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.SALESPURCHASESEXPENSESREPORTSCREEN,
+      page: () => SalesPurchasesExpensesReportScreen(
+          service: FinancialAccountingApiService(api: Get.find<DioConsumer>())),
+      binding: BindingsBuilder(AppDependencyRegistry.ensureNetworkAndApi),
       transition: _transitionFadeIn,
     ),
     GetPage(
