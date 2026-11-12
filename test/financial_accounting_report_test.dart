@@ -162,6 +162,8 @@ void main() {
     expect(find.text('كشف حساب'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('قائمة الدخل المفصّلة'), 200);
     expect(find.text('قائمة الدخل المفصّلة'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('تقرير أرباح المبيعات'), 200);
+    expect(find.text('تقرير أرباح المبيعات'), findsOneWidget);
   });
 
   for (final type in ['expenses', 'income']) {

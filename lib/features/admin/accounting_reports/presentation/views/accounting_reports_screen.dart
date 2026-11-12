@@ -43,6 +43,11 @@ class AccountingReportsScreen extends StatelessWidget {
                     'الإيرادات وتكلفة المبيعات وتفصيل المصاريف وصافي الربح أو الخسارة.',
                     Icons.account_balance_outlined,
                     AppRoutes.INCOMEACCOUNTINGSCREEN),
+                _card(
+                    'تقرير أرباح المبيعات',
+                    'إجمالي حسب الفاتورة أو تفصيلي حسب أصنافها، للبيع والطلبيات والصيانة.',
+                    Icons.trending_up,
+                    AppRoutes.SALESPROFITREPORTSCREEN),
               ],
             )),
       );

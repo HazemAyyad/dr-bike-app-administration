@@ -97,6 +97,7 @@ import '../features/admin/accounting_reports/presentation/bindings/financial_acc
 import '../features/admin/accounting_reports/data/financial_accounting_api_service.dart';
 import '../features/admin/accounting_reports/presentation/views/sales_purchases_expenses_report_screen.dart';
 import '../features/admin/accounting_reports/presentation/views/party_account_statement_screen.dart';
+import '../features/admin/accounting_reports/presentation/views/sales_profit_report_screen.dart';
 import '../core/databases/api/dio_consumer.dart';
 import '../core/services/app_dependency_registry.dart';
 import '../features/admin/reports/presentation/views/reports_screen.dart';
@@ -1430,6 +1431,13 @@ class AppPages {
     GetPage(
       name: AppRoutes.PARTYACCOUNTSTATEMENTSCREEN,
       page: () => PartyAccountStatementScreen(
+          service: FinancialAccountingApiService(api: Get.find<DioConsumer>())),
+      binding: BindingsBuilder(AppDependencyRegistry.ensureNetworkAndApi),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.SALESPROFITREPORTSCREEN,
+      page: () => SalesProfitReportScreen(
           service: FinancialAccountingApiService(api: Get.find<DioConsumer>())),
       binding: BindingsBuilder(AppDependencyRegistry.ensureNetworkAndApi),
       transition: _transitionFadeIn,
