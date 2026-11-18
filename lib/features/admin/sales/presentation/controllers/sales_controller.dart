@@ -66,6 +66,7 @@ import 'sales_service.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+import '../utils/suspended_invoice_guard.dart';
 
 /// GetX tag for payment fields on the new instant sale screen.
 const String kInstantSalePaymentTag = 'instant_sale_payment';
@@ -2479,6 +2480,8 @@ class SalesController extends GetxController
 
   final RxInt suspendedInvoicesCount = 0.obs;
   final RxnInt activeSuspendedSaleId = RxnInt();
+  String? _activeSuspendedPayloadHash;
+  Map<String, dynamic> _activeSuspendedOriginalPayload = {};
   final RxnInt activeEditInstantSaleId = RxnInt();
 
   String? get activeSuspendedReferenceCode =>
@@ -2510,6 +2513,46 @@ class SalesController extends GetxController
   void clearActiveSuspendedSale() {
     activeSuspendedSaleId.value = null;
     _activeSuspendedSaleIsAuto = false;
+    _activeSuspendedPayloadHash = null;
+    _activeSuspendedOriginalPayload = {};
+  }
+
+  Future<bool?> _confirmSuspendedBuyerChange(
+    BuildContext context,
+    Map<String, dynamic> payload,
+  ) async {
+    if (activeSuspendedSaleId.value == null ||
+        !SuspendedInvoiceGuard.needsBuyerConfirmation(
+          _activeSuspendedOriginalPayload,
+          payload,
+        )) {
+      return false;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('suspendedInvoiceBuyerChangedTitle'.tr),
+        content: Text('suspendedInvoiceBuyerChangedMessage'.trParams({
+          'reference': activeSuspendedReferenceCode ??
+              activeAutoSuspendedReferenceCode ??
+              '',
+          'original':
+              _activeSuspendedOriginalPayload['buyer_name']?.toString() ?? '-',
+          'current': payload['buyer_name']?.toString() ?? '-',
+        })),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('suspendedInvoiceConfirmBuyerChange'.tr),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true ? true : null;
   }
 
   void clearActiveEditInstantSale() {
@@ -2749,12 +2792,18 @@ class SalesController extends GetxController
         'payloadLines': _payloadSuspendedLinesDebugSnapshot(payload),
         'rawOtherProducts': payload['other_products'],
       });
+      if (!context.mounted) return false;
+      final confirmBuyerChange =
+          await _confirmSuspendedBuyerChange(context, payload);
+      if (confirmBuyerChange == null) return false;
       final result = await Get.find<SalesImplement>().suspendInstantSale(
         currentStep: currentStep,
         payload: payload,
         saveType: 'manual',
         suspendedInstantSaleId: activeSuspendedSaleId.value,
         note: suspendNote,
+        expectedPayloadHash: _activeSuspendedPayloadHash,
+        confirmBuyerChange: confirmBuyerChange,
       );
 
       return await result.fold(
@@ -2864,9 +2913,11 @@ class SalesController extends GetxController
     });
     try {
       clearActiveEditInstantSale();
+      resetInstantSaleForm(renewFormKey: true);
       activeSuspendedSaleId.value = sale.id;
       _activeSuspendedSaleIsAuto = sale.isAutoSaved;
-      resetInstantSaleForm(renewFormKey: true);
+      _activeSuspendedPayloadHash = sale.payloadHash;
+      _activeSuspendedOriginalPayload = Map<String, dynamic>.from(sale.payload);
       setInstantSaleAdjustmentMode(
         sale.payload['sale_kind'] == kInstantSaleKindAdjustment,
       );
@@ -2884,6 +2935,7 @@ class SalesController extends GetxController
       return true;
     } catch (e) {
       _instantSaleDebug('resume failed', e);
+      clearActiveSuspendedSale();
       AppFailureNotice.show(
         title: 'error'.tr,
         message: e.toString(),
@@ -4301,6 +4353,7 @@ class SalesController extends GetxController
   }
 
   void resetInstantSaleForm({bool renewFormKey = true}) {
+    clearActiveSuspendedSale();
     noteController.clear();
     clearInstantSaleNotes(dispose: false);
     totalCostController.clear();
@@ -5170,6 +5223,9 @@ class SalesController extends GetxController
     isLoading(true);
     try {
       final payload = buildInstantSaleSuspendPayload();
+      final confirmBuyerChange =
+          await _confirmSuspendedBuyerChange(context, payload);
+      if (confirmBuyerChange == null) return;
       _instantSaleDebug('complete suspended requested', {
         'suspendedId': suspendedId,
         'payloadKeys': payload.keys.toList(),
@@ -5186,6 +5242,8 @@ class SalesController extends GetxController
           await Get.find<SalesImplement>().completeSuspendedInstantSale(
         suspendedInstantSaleId: suspendedId,
         payload: payload,
+        expectedPayloadHash: _activeSuspendedPayloadHash,
+        confirmBuyerChange: confirmBuyerChange,
       );
 
       await result.fold(

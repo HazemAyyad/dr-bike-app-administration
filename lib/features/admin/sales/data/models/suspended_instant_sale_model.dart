@@ -42,6 +42,7 @@ class SuspendedInstantSaleModel {
   final List<SuspendedInstantSaleNote> noteLog;
   final SuspendedInstantSaleNote? latestNote;
   final Map<String, dynamic> payload;
+  final String? payloadHash;
 
   const SuspendedInstantSaleModel({
     required this.id,
@@ -59,6 +60,7 @@ class SuspendedInstantSaleModel {
     this.noteLog = const [],
     this.latestNote,
     required this.payload,
+    this.payloadHash,
   });
 
   bool get isCheckoutStep => currentStep == 'checkout';
@@ -82,6 +84,7 @@ class SuspendedInstantSaleModel {
       summaryLabel: asString(json['summary_label'], ''),
       totalCost: asDouble(json['total_cost']),
       status: asString(json['status'], 'suspended'),
+      payloadHash: json['payload_hash']?.toString(),
       suspendedAt: json['suspended_at']?.toString(),
       createdByUserId: json['created_by_user_id'] == null
           ? null

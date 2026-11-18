@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/helpers/app_failure_notice.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../data/models/suspended_instant_sale_model.dart';
 import '../../data/repositories/sales_implement.dart';
@@ -166,8 +167,19 @@ class SuspendedInvoicesController extends GetxController {
         'rawOtherProducts': item.payload['other_products'],
       });
       final sales = Get.find<SalesController>();
-      await sales.resumeSuspendedInstantSale(item);
+      final current =
+          await Get.find<SalesImplement>().getSuspendedInstantSale(id: item.id);
+      if (current.status != 'suspended') {
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'suspendedInvoiceNoLongerActive'.tr,
+        );
+        return;
+      }
+      await sales.resumeSuspendedInstantSale(current);
       _suspendedInvoiceDebug('resume item finished', item.id);
+    } catch (e) {
+      AppFailureNotice.show(title: 'error'.tr, message: e.toString());
     } finally {
       isLoading(false);
     }

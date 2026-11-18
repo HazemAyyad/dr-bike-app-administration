@@ -2928,6 +2928,12 @@ const Map<String, String> ar = {
   'suspendedInvoiceCancelMessage':
       'هل أنت متأكد من إلغاء هذه الفاتورة العالقة؟',
   'suspendedInvoiceResuming': 'استكمال فاتورة',
+  'suspendedInvoiceBuyerChangedTitle': 'تغيّر زبون الفاتورة العالقة',
+  'suspendedInvoiceBuyerChangedMessage':
+      'الفاتورة @reference محفوظة باسم @original، والزبون الحالي @current. هل تقصد تغيير زبون نفس الفاتورة؟ لإنشاء بيع مستقل، ألغِ العملية وابدأ فاتورة جديدة.',
+  'suspendedInvoiceConfirmBuyerChange': 'تأكيد تغيير الزبون',
+  'suspendedInvoiceNoLongerActive':
+      'هذه الفاتورة اكتملت أو أُلغيت. حدّث قائمة الفواتير العالقة.',
   'suspendedInvoiceNotes': 'ملاحظات الفاتورة',
   'suspendedInvoiceNotesEmpty': 'لا توجد ملاحظات بعد',
   'suspendedInvoiceNoteHint': 'اكتب ملاحظة على الفاتورة',

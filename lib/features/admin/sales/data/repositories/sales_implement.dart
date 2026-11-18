@@ -411,6 +411,8 @@ class SalesImplement implements SalesRepository {
     String saveType = 'manual',
     int? suspendedInstantSaleId,
     String? note,
+    String? expectedPayloadHash,
+    bool confirmBuyerChange = false,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -422,6 +424,8 @@ class SalesImplement implements SalesRepository {
         saveType: saveType,
         suspendedInstantSaleId: suspendedInstantSaleId,
         note: note,
+        expectedPayloadHash: expectedPayloadHash,
+        confirmBuyerChange: confirmBuyerChange,
       );
       if (result['status'] == 'success') {
         return Right(result['message']?.toString() ?? 'success');
@@ -459,6 +463,8 @@ class SalesImplement implements SalesRepository {
   Future<Either<Failure, String>> completeSuspendedInstantSale({
     required int suspendedInstantSaleId,
     Map<String, dynamic>? payload,
+    String? expectedPayloadHash,
+    bool confirmBuyerChange = false,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -467,6 +473,8 @@ class SalesImplement implements SalesRepository {
       final result = await salesDatasource.completeSuspendedInstantSale(
         suspendedInstantSaleId: suspendedInstantSaleId,
         payload: payload,
+        expectedPayloadHash: expectedPayloadHash,
+        confirmBuyerChange: confirmBuyerChange,
       );
       if (result['status'] == 'success') {
         return Right(result['message']?.toString() ?? 'success');

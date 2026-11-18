@@ -2879,6 +2879,12 @@ const Map<String, String> en = {
   'suspendedInvoiceCancelMessage':
       'Are you sure you want to cancel this suspended invoice?',
   'suspendedInvoiceResuming': 'Resuming invoice',
+  'suspendedInvoiceBuyerChangedTitle': 'Suspended invoice buyer changed',
+  'suspendedInvoiceBuyerChangedMessage':
+      'Invoice @reference was saved for @original. The current buyer is @current. Do you intend to change the buyer of this invoice? To create a separate sale, cancel and start a new invoice.',
+  'suspendedInvoiceConfirmBuyerChange': 'Confirm buyer change',
+  'suspendedInvoiceNoLongerActive':
+      'This invoice was completed or cancelled. Refresh suspended invoices.',
   'suspendedInvoiceNotes': 'Invoice notes',
   'suspendedInvoiceNotesEmpty': 'No notes yet',
   'suspendedInvoiceNoteHint': 'Write a note on this invoice',

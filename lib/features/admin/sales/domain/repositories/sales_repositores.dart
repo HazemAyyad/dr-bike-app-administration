@@ -121,6 +121,8 @@ abstract class SalesRepository {
     String saveType = 'manual',
     int? suspendedInstantSaleId,
     String? note,
+    String? expectedPayloadHash,
+    bool confirmBuyerChange = false,
   });
 
   Future<Either<Failure, SuspendedInstantSaleModel>>
@@ -132,6 +134,8 @@ abstract class SalesRepository {
   Future<Either<Failure, String>> completeSuspendedInstantSale({
     required int suspendedInstantSaleId,
     Map<String, dynamic>? payload,
+    String? expectedPayloadHash,
+    bool confirmBuyerChange = false,
   });
 
   Future<Either<Failure, String>> cancelSuspendedInstantSale({

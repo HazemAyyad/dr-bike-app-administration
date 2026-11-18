@@ -1498,6 +1498,8 @@ class SalesDatasource {
     String saveType = 'manual',
     int? suspendedInstantSaleId,
     String? note,
+    String? expectedPayloadHash,
+    bool confirmBuyerChange = false,
   }) async {
     try {
       final data = {
@@ -1507,6 +1509,9 @@ class SalesDatasource {
         if (suspendedInstantSaleId != null)
           'suspended_instant_sale_id': suspendedInstantSaleId,
         if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+        if (expectedPayloadHash != null)
+          'expected_payload_hash': expectedPayloadHash,
+        if (confirmBuyerChange) 'confirm_buyer_change': true,
       };
       _suspendedInstantSaleDebug('POST suspend instant sale payload', {
         'endpoint': EndPoints.suspendedInstantSale,
@@ -1613,11 +1618,16 @@ class SalesDatasource {
   Future<Map<String, dynamic>> completeSuspendedInstantSale({
     required int suspendedInstantSaleId,
     Map<String, dynamic>? payload,
+    String? expectedPayloadHash,
+    bool confirmBuyerChange = false,
   }) async {
     try {
       final data = {
         'suspended_instant_sale_id': suspendedInstantSaleId,
         if (payload != null) 'payload': payload,
+        if (expectedPayloadHash != null)
+          'expected_payload_hash': expectedPayloadHash,
+        if (confirmBuyerChange) 'confirm_buyer_change': true,
       };
       _instantSaleDebug('POST complete suspended instant sale', {
         'endpoint': EndPoints.suspendedInstantSaleComplete,
