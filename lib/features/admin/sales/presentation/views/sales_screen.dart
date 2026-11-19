@@ -22,6 +22,7 @@ import '../widgets/sales_skeleton_widgets.dart';
 import '../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
 import '../../../sales_orders/presentation/widgets/sales_orders_table.dart';
 import '../../../sales_orders/presentation/widgets/sales_orders_toolbar.dart';
+import '../../../sales_orders/presentation/widgets/sales_orders_financial_summary.dart';
 import '../../../sales_returns/presentation/controllers/sales_returns_controller.dart';
 import '../../../sales_returns/presentation/widgets/sales_returns_list.dart';
 import '../../../sales_returns/presentation/widgets/sales_returns_toolbar.dart';
@@ -81,9 +82,11 @@ class _SalesScreenState extends State<SalesScreen> {
                 return;
               }
               if (controller.currentTab.value == 2) {
-                if (Get.isRegistered<SalesOrdersController>()) {
-                  await Get.find<SalesOrdersController>().loadOrders();
-                }
+                await Future.wait([
+                  if (Get.isRegistered<SalesOrdersController>())
+                    Get.find<SalesOrdersController>().loadOrders(),
+                  controller.loadSalesOrdersDailySession(),
+                ]);
                 return;
               }
               await controller.refreshSales();
@@ -96,7 +99,13 @@ class _SalesScreenState extends State<SalesScreen> {
                   () {
                     if (controller.currentTab.value == 2) {
                       return const SliverToBoxAdapter(
-                        child: SalesOrdersToolbar(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SalesOrdersFinancialSummary(),
+                            SalesOrdersToolbar(),
+                          ],
+                        ),
                       );
                     }
                     if (controller.currentTab.value == 0 ||

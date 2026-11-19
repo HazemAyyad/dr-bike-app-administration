@@ -1,4 +1,7 @@
 import 'package:doctorbike/core/databases/api/dio_consumer.dart';
+import 'package:doctorbike/features/admin/checks/data/models/check_model.dart';
+import 'package:doctorbike/features/admin/sales/data/models/invoice_model.dart';
+import 'package:doctorbike/features/admin/sales/data/models/product_model.dart';
 import 'package:doctorbike/features/admin/checks/domain/repositories/checks_repository.dart';
 import 'package:doctorbike/features/admin/checks/domain/usecases/all_customers_sellers_usecase.dart';
 import 'package:doctorbike/features/admin/sales/domain/repositories/sales_repositores.dart';
@@ -21,6 +24,98 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => Get.put<DioConsumer>(_DioConsumer()));
   tearDown(Get.reset);
+
+  for (final editing in [false, true]) {
+    test(
+        'price, quantity and bonus changes update ${editing ? 'edited' : 'new'} sales',
+        () {
+      final sales = _salesController(editing: editing);
+      final paid = _line('1', quantity: '2', price: '100');
+      final bonus = _line('1', quantity: '3', price: '50')..isBonus = true;
+      bonus.recalculateTotal();
+      sales.addCartLine(paid);
+      sales.addCartLine(bonus);
+      sales.syncCartToItems();
+      expect(sales.cartLines.length, 2);
+      expect(sales.totalCost.value, 200);
+
+      paid.priceController.text = '125.50';
+      expect(sales.totalCost.value, 251);
+      paid.quantityController.text = '3';
+      expect(sales.totalCost.value, 376.5);
+      bonus.quantityController.text = '8';
+      bonus.priceController.text = '999';
+      expect(sales.totalCost.value, 376.5);
+      expect(bonus.lineTotal.value, 0);
+      expect(sales.buildCartOtherProductsPayload().last['cost'], '0');
+      expect(sales.buildCartOtherProductsPayload().last['is_bonus'], true);
+
+      sales.setCartLineBonus(0, true);
+      expect(sales.totalCost.value, 0);
+      sales.setCartLineBonus(0, false);
+      expect(sales.totalCost.value, 376.5);
+    });
+  }
+
+  test('administrative corrections keep recalculating after invoice hydration',
+      () async {
+    final sales = _salesController(administrative: true);
+    await sales.hydrateFromInvoice(InvoiceModel.fromJson({
+      'id': 42,
+      'product_id': '1',
+      'quantity': '2',
+      'cost': '100',
+      'discount': '10',
+      'total_cost': '190',
+      'sub_products': [
+        {
+          'id': 43,
+          'product_id': '1',
+          'quantity': '3',
+          'cost': '0',
+          'is_bonus': true
+        },
+      ],
+    }));
+    expect(sales.totalCost.value, 190);
+    sales.cartLines.first.priceController.text = '125';
+    expect(sales.totalCost.value, 240);
+    sales.cartLines.first.quantityController.text = '3';
+    expect(sales.totalCost.value, 365);
+    sales.cartLines.last.quantityController.text = '8';
+    expect(sales.totalCost.value, 365);
+    sales.saveInstantSaleNoteLine(text: 'Delivery', amount: '5');
+    expect(sales.totalCost.value, 370);
+    expect(sales.totalController.text, '370');
+  });
+
+  testWidgets('removing the final synced product clears its invoice total',
+      (tester) async {
+    final sales = _salesController();
+    sales.addCartLine(_line('1', quantity: '2', price: '100'));
+    sales.syncCartToItems();
+    sales.removeCartLine(0);
+    sales.syncCartToItems();
+    expect(sales.totalCost.value, 0);
+    expect(sales.totalController.text, '0');
+    await tester.pump();
+  });
+
+  test('syncing extra products preserves package quantity and price', () {
+    final sales = _salesController();
+    sales.isPackageSale.value = true;
+    sales.selectedPackageId.value = 7;
+    sales.items.first.quantityController.text = '2';
+    sales.items.first.priceController.text = '100';
+    sales.addCartLine(_line('1', quantity: '1', price: '25'));
+    sales.setCartLinePrice(0, '30');
+    sales.calculateGrandTotal();
+    expect(sales.items.first.quantityController.text, '2');
+    expect(sales.items.first.priceController.text, '100');
+    expect(sales.totalCost.value, 230);
+    sales.setCartLineBonus(0, true);
+    expect(sales.totalCost.value, 200);
+  });
 
   test('edited order prices immediately update the discounted cart total', () {
     final sales = _salesController();
@@ -87,9 +182,11 @@ InstantSaleCartLine _line(String id,
       initialPrice: price,
     );
 
-SalesController _salesController() {
+SalesController _salesController(
+    {bool editing = true, bool administrative = false}) {
   final repository = _SalesRepository();
-  final sales = SalesController(
+  final sales = _TestSalesController(
+    administrative: administrative,
     salesService: SalesService(),
     addProfitSaleUsecase: AddProfitSaleUsecase(salesRepository: repository),
     getProfitSalesUsecase: GetProfitSalesUsecase(salesRepository: repository),
@@ -104,7 +201,7 @@ SalesController _salesController() {
     allCustomersSellersUsecase:
         AllCustomersSellersUsecase(checksRepository: _ChecksRepository()),
   );
-  sales.activeEditInstantSaleId.value = 42;
+  sales.activeEditInstantSaleId.value = editing ? 42 : null;
   sales.animController = AnimationController(vsync: sales);
   addTearDown(() {
     sales.clearCartLines(deferDispose: false);
@@ -113,8 +210,57 @@ SalesController _salesController() {
   return sales;
 }
 
-class _SalesRepository extends Fake implements SalesRepository {}
+class _TestSalesController extends SalesController {
+  _TestSalesController({
+    required this.administrative,
+    required SalesService salesService,
+    required AddProfitSaleUsecase addProfitSaleUsecase,
+    required GetProfitSalesUsecase getProfitSalesUsecase,
+    required GetInstantSalesUsecase getInstantSalesUsecase,
+    required GetAllProductsUsecase getAllProductsUsecase,
+    required UpdateProductRetailPriceUsecase updateProductRetailPriceUsecase,
+    required AddInstantSalesUsecase addInstantSalesUsecase,
+    required InvoiceModelUsecase invoiceModelUsecase,
+    required GetCustomerProductPriceHistoryUsecase
+        getCustomerProductPriceHistoryUsecase,
+    required AllCustomersSellersUsecase allCustomersSellersUsecase,
+  }) : super(
+          salesService: salesService,
+          addProfitSaleUsecase: addProfitSaleUsecase,
+          getProfitSalesUsecase: getProfitSalesUsecase,
+          getInstantSalesUsecase: getInstantSalesUsecase,
+          getAllProductsUsecase: getAllProductsUsecase,
+          updateProductRetailPriceUsecase: updateProductRetailPriceUsecase,
+          addInstantSalesUsecase: addInstantSalesUsecase,
+          invoiceModelUsecase: invoiceModelUsecase,
+          getCustomerProductPriceHistoryUsecase:
+              getCustomerProductPriceHistoryUsecase,
+          allCustomersSellersUsecase: allCustomersSellersUsecase,
+        );
 
-class _ChecksRepository extends Fake implements ChecksRepository {}
+  final bool administrative;
+
+  @override
+  bool get isClosedDayAdministrativeCorrection => administrative;
+}
+
+class _SalesRepository extends Fake implements SalesRepository {
+  @override
+  Future<List<ProductModel>> getAllProducts({
+    String endPoint = '',
+    String? customerId,
+    String? sellerId,
+    String? search,
+    String? storeSectionId,
+  }) async =>
+      [];
+}
+
+class _ChecksRepository extends Fake implements ChecksRepository {
+  @override
+  Future<List<SellerModel>> allCustomersSellers(
+          {required String endPoint}) async =>
+      [];
+}
 
 class _DioConsumer extends Fake implements DioConsumer {}

@@ -46,7 +46,7 @@ class DiscountWidget extends GetView<SalesController> {
             Expanded(
               child: Obx(
                 () => CustomTextField(
-                  enabled: controller.isClosedDayAdministrativeCorrection,
+                  enabled: false,
                   label: 'totalBill',
                   hintText:
                       SalesAmountFormat.display(controller.totalCost.value),
@@ -57,9 +57,6 @@ class DiscountWidget extends GetView<SalesController> {
                     LocalizedNumberInputFormatter(decimal: true),
                   ],
                   validator: (p0) => null,
-                  onChanged: (value) {
-                    controller.setAdministrativeInvoiceTotal(value);
-                  },
                 ),
               ),
             ),

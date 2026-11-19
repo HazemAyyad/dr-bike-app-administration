@@ -3321,12 +3321,6 @@ class SalesController extends GetxController
     }
 
     calculateGrandTotal();
-    if (isClosedDayAdministrativeCorrection) {
-      totalCost.value = SalesAmountFormat.parse(invoice.totalCost);
-      totalController.text = SalesAmountFormat.display(totalCost.value);
-      _administrativeTotalTouched = true;
-      syncPaymentCashFromTotal(onlyIfCashEmpty: true);
-    }
     bumpCartRevision();
   }
 
@@ -3618,7 +3612,6 @@ class SalesController extends GetxController
   String? _paymentBoxValue;
   String? _closedDayEditMode;
   String? _closedDayEditReason;
-  bool _administrativeTotalTouched = false;
   bool get isClosedDayAdministrativeCorrection =>
       _closedDayEditMode == 'administrative_correction';
   bool get isUnpaidClosedDayCorrection =>
@@ -4375,7 +4368,6 @@ class SalesController extends GetxController
     totalCost.value = 0.0;
     instantSalePaidAmount.value = 0;
     _instantSalePaymentAmountTouched = false;
-    _administrativeTotalTouched = false;
     pickerPartnerIsCustomer.value = true;
     _clearPaymentBuyer();
     if (renewFormKey) {
@@ -4475,12 +4467,15 @@ class SalesController extends GetxController
   void removeCartLine(int index) {
     if (index < 0 || index >= cartLines.length) return;
     final old = cartLines.removeAt(index);
+    syncCartToItems();
     calculateGrandTotal();
     bumpCartRevision();
     WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
   }
 
   void syncCartToItems() {
+    // The first item holds the package, while cartLines holds extra products.
+    if (hasSelectedPackage) return;
     while (items.length > 1) {
       items.removeLast();
     }
@@ -4929,15 +4924,6 @@ class SalesController extends GetxController
     }
   }
 
-  void setAdministrativeInvoiceTotal(String value) {
-    if (!isClosedDayAdministrativeCorrection) return;
-    _administrativeTotalTouched = true;
-    totalCost.value =
-        SalesAmountFormat.parse(value).clamp(0, double.infinity).toDouble();
-    syncPaymentCashFromTotal();
-    refreshInstantSalePaymentSummary();
-  }
-
   void calculateGrandTotal() {
     // Price and quantity controllers can change outside a field's onChanged.
     // Keep the invoice total in sync with the current cart in every edit flow.
@@ -4971,14 +4957,8 @@ class SalesController extends GetxController
     final calculatedTotal = (total - discount + instantSaleNotesTotal)
         .clamp(0, double.infinity)
         .toDouble();
-    if (isClosedDayAdministrativeCorrection && _administrativeTotalTouched) {
-      totalCost.value = SalesAmountFormat.parse(totalController.text)
-          .clamp(0, double.infinity)
-          .toDouble();
-    } else {
-      totalCost.value = calculatedTotal;
-      totalController.text = SalesAmountFormat.display(totalCost.value);
-    }
+    totalCost.value = calculatedTotal;
+    totalController.text = SalesAmountFormat.display(totalCost.value);
     syncPaymentCashFromTotal();
     refreshInstantSalePaymentSummary();
   }

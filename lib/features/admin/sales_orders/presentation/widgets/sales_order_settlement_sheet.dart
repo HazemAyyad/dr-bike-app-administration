@@ -41,7 +41,9 @@ class SalesOrderSettlementSheet extends StatefulWidget {
           final confirmed = await showDialog<bool>(
               context: context,
               builder: (dialogContext) => AlertDialog(
-                    title: const Text('أرشفة الطلبية المسددة؟'),
+                    title: const Text('أرشفة الطلبية المسددة؟',
+                        style: TextStyle(
+                            color: SalesOrdersController.textPrimary)),
                     content: const Text(
                         'لا يوجد رصيد مستحق على الزبون أو شركة التوصيل.'),
                     actions: [
@@ -171,7 +173,9 @@ class _SettlementSheetState extends State<SalesOrderSettlementSheet> {
                   fromCarrier
                       ? 'تحصيل وتسوية شركة التوصيل'
                       : 'تحصيل دين الزبون',
-                  style: Theme.of(context).textTheme.titleLarge),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: SalesOrdersController.textPrimary,
+                      )),
               const SizedBox(height: 6),
               Text(
                   '${widget.order.customerName ?? ''} — ${widget.order.serialNumber ?? '#${widget.order.id}'}'),
