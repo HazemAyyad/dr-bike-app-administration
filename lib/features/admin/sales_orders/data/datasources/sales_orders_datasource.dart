@@ -51,7 +51,13 @@ class SalesOrdersDatasource {
     final counts = rawCounts.map(
       (key, value) => MapEntry('$key', (value as num?)?.toInt() ?? 0),
     );
-    return SalesOrdersPageModel(orders: orders, statusCounts: counts);
+    final summary = response['financial_summary'] as Map? ?? const {};
+    return SalesOrdersPageModel(
+      orders: orders,
+      statusCounts: counts,
+      financialSummary: summary.map(
+          (key, value) => MapEntry('$key', double.tryParse('$value') ?? 0)),
+    );
   }
 
   Future<List<PartnerAddressModel>> fetchPartnerAddresses({

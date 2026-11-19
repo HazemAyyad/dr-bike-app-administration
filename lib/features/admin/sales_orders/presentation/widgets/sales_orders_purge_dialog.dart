@@ -186,7 +186,11 @@ class _SalesOrdersPurgeDialogState extends State<SalesOrdersPurgeDialog> {
                     _mode == 'orders_only_reset' &&
                             preview['can_reset_counters'] != true
                         ? 'تصفير العدادات يتطلب اختيار جميع الطلبيات الحالية.'
-                        : 'التنظيف موقوف لوجود فواتير بيع أو مرتجعات مالية تحتاج معالجة منفصلة.',
+                        : (preview['closed_drawer_cash_orders_count'] as num? ??
+                                    0) >
+                                0
+                            ? 'التنظيف موقوف لوجود تحصيلات في جلسة صندوق مغلقة؛ راجع الترحيلات قبل عكس الآثار المالية.'
+                            : 'التنظيف موقوف لوجود فواتير بيع أو مرتجعات مالية تحتاج معالجة منفصلة.',
                     style: const TextStyle(color: Colors.red),
                   ),
                 ],

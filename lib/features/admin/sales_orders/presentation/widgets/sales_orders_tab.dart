@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'sales_orders_table.dart';
 import 'sales_orders_toolbar.dart';
+import 'sales_orders_financial_summary.dart';
 
 /// تبويب الطلبيات داخل شاشة المبيعات.
 class SalesOrdersTab extends StatelessWidget {
@@ -12,6 +13,7 @@ class SalesOrdersTab extends StatelessWidget {
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        SalesOrdersFinancialSummary(),
         SalesOrdersToolbar(),
         SalesOrdersTable(),
       ],

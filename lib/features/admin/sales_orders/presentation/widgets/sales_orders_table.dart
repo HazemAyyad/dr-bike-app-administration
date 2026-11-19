@@ -15,6 +15,7 @@ import '../controllers/sales_orders_controller.dart';
 import 'sales_order_status_ui.dart';
 import 'sales_order_origin_badge.dart';
 import 'sales_order_notes_badges.dart';
+import 'sales_order_settlement_sheet.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
@@ -65,6 +66,10 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
                 onOptions: () => _showOrderOptions(context, order),
                 child: _OrderCard(
                   order: order,
+                  onSettle: order.status == 'delivered' && !bulk
+                      ? () => SalesOrderSettlementSheet.show(
+                          context, controller, order.id)
+                      : null,
                   bulk: bulk,
                   selected: controller.selectedOrderIds.contains(order.id),
                   onSelect: (value) =>
@@ -203,6 +208,18 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
                   title: 'تأكيد الطلبية؟',
                   action: () => controller.confirmOrder(order.id),
                 ),
+              ),
+            if (order.status == 'delivered')
+              ListTile(
+                leading: const Icon(Icons.account_balance_wallet_outlined),
+                title: Text(order.carrierReceivableBalance > 0 ||
+                        order.customerDebtBalance > 0
+                    ? 'تسوية وأرشفة الطلبية'
+                    : 'أرشفة الطلبية المسددة'),
+                onTap: () {
+                  Get.back();
+                  SalesOrderSettlementSheet.show(context, controller, order.id);
+                },
               ),
             ListTile(
                 leading: const Icon(Icons.picture_as_pdf_outlined),
@@ -641,6 +658,7 @@ class _OrderCard extends StatelessWidget {
     required this.onSelect,
     required this.onTap,
     this.onLongPress,
+    this.onSettle,
   });
 
   final SalesOrderListItemModel order;
@@ -649,6 +667,7 @@ class _OrderCard extends StatelessWidget {
   final ValueChanged<bool> onSelect;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
+  final VoidCallback? onSettle;
 
   @override
   Widget build(BuildContext context) {
@@ -852,7 +871,22 @@ class _OrderCard extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 3.w),
-              Icon(Icons.chevron_left_rounded, size: 19.sp, color: Colors.grey),
+              if (onSettle != null)
+                IconButton(
+                  tooltip: order.carrierReceivableBalance > 0 ||
+                          order.customerDebtBalance > 0
+                      ? 'تسوية وأرشفة'
+                      : 'أرشفة',
+                  onPressed: onSettle,
+                  icon: Icon(order.carrierReceivableBalance > 0 ||
+                          order.customerDebtBalance > 0
+                      ? Icons.account_balance_wallet_outlined
+                      : Icons.archive_outlined),
+                  color: AppColors.primaryColor,
+                )
+              else
+                Icon(Icons.chevron_left_rounded,
+                    size: 19.sp, color: Colors.grey),
             ],
           ),
         ),

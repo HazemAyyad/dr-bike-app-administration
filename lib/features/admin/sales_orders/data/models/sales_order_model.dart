@@ -2,10 +2,12 @@ class SalesOrdersPageModel {
   const SalesOrdersPageModel({
     required this.orders,
     required this.statusCounts,
+    this.financialSummary = const {},
   });
 
   final List<SalesOrderListItemModel> orders;
   final Map<String, int> statusCounts;
+  final Map<String, double> financialSummary;
 }
 
 class SalesOrderListItemModel {
@@ -402,6 +404,32 @@ class SalesOrderAdditionalNote {
 }
 
 class SalesOrderDetailModel {
+  bool get canArchive =>
+      status == 'delivered' &&
+      carrierReceivableBalance <= 0 &&
+      customerDebtBalance <= 0;
+
+  // Legacy Shiply orders sometimes stored zero without obtaining a carrier quote.
+  // The customer charge is only an editable estimate, never a posted expense.
+  bool get usesCustomerFeeEstimate =>
+      isShiplyDelivery &&
+      (carrierDeliveryCost ?? 0) <= 0 &&
+      shiplyQuotedDeliveryFee == null &&
+      customerDeliveryFee > 0;
+
+  double get suggestedCarrierFee {
+    final cost = (carrierDeliveryCost ?? 0) > 0
+        ? carrierDeliveryCost!
+        : isShiplyDelivery && (shiplyQuotedDeliveryFee ?? 0) > 0
+            ? shiplyQuotedDeliveryFee!
+            : usesCustomerFeeEstimate
+                ? customerDeliveryFee
+                : 0.0;
+    return (cost - settlementCarrierFeeTotal)
+        .clamp(0, carrierReceivableBalance > 0 ? carrierReceivableBalance : 0)
+        .toDouble();
+  }
+
   double get additionalNotesTotal =>
       additionalNotes.fold<double>(0, (sum, note) => sum + note.amount);
   double get netPrice => (subtotal + additionalNotesTotal - discount)

@@ -121,6 +121,7 @@ class SalesOrdersController extends GetxController {
 
   final bulkMode = false.obs;
   final selectedOrderIds = <int>{}.obs;
+  final financialSummary = <String, double>{}.obs;
 
   final selectedCityId = RxnInt();
   final selectedShiplyCityId = RxnInt();
@@ -401,6 +402,7 @@ class SalesOrdersController extends GetxController {
       (_) {
         orders.clear();
         statusCounts.clear();
+        financialSummary.clear();
       },
       (data) {
         orders.assignAll(
@@ -409,6 +411,7 @@ class SalesOrdersController extends GetxController {
               : data.orders,
         );
         statusCounts.assignAll(data.statusCounts);
+        financialSummary.assignAll(data.financialSummary);
         statusCounts['all'] = data.statusCounts.entries
             .where((entry) =>
                 entry.key != 'archived' &&
@@ -1833,11 +1836,15 @@ class SalesOrdersController extends GetxController {
     return submitCreateOrderFromCheckout(sales);
   }
 
-  Future<void> runAction(
+  Future<bool> runAction(
     Future<Either<Failure, SalesOrderDetailModel>> Function() action, {
     bool deferNotice = false,
+    bool showSuccessNotice = true,
+    bool keepCurrentTab = false,
   }) async {
+    if (isSubmitting.value) return false;
     isSubmitting.value = true;
+    var succeeded = false;
     try {
       final result = await action();
       result.fold(
@@ -1845,11 +1852,17 @@ class SalesOrdersController extends GetxController {
             ? SalesOrderNotice.errorDeferred(_humanizeFailure(f))
             : SalesOrderNotice.error(_humanizeFailure(f)),
         (order) {
+          succeeded = true;
           detail.value = order;
-          focusOrderStatusTab(order.status);
+          if (keepCurrentTab) {
+            loadOrders();
+          } else {
+            focusOrderStatusTab(order.status);
+          }
           final msg = 'salesOrderMovedToTab'.trParams({
             'status': statusLabel(order.status),
           });
+          if (!showSuccessNotice) return;
           if (deferNotice) {
             SalesOrderNotice.successDeferred(msg);
           } else {
@@ -1866,6 +1879,7 @@ class SalesOrdersController extends GetxController {
     } finally {
       isSubmitting.value = false;
     }
+    return succeeded;
   }
 
   Future<void> withBlockingProgress(
@@ -1948,11 +1962,14 @@ class SalesOrdersController extends GetxController {
   }
 
   Future<void> handover(int orderId) async {
+    final carrierCost =
+        tryParseLocalizedAmount(carrierDeliveryCostController.text) ?? 0;
     final body = <String, dynamic>{
       if (selectedDeliveryCompanyId.value != null)
         'delivery_company_id': selectedDeliveryCompanyId.value,
-      'carrier_delivery_cost':
-          tryParseLocalizedAmount(carrierDeliveryCostController.text) ?? 0,
+      // Shiply's hidden zero default must not override the server's saved quote.
+      if (!isSelectedCompanyShiply || carrierCost > 0)
+        'carrier_delivery_cost': carrierCost,
     };
     if (isSelectedCompanyTaxi) {
       body['carrier_contact_name'] = carrierContactNameController.text.trim();
@@ -2022,6 +2039,31 @@ class SalesOrdersController extends GetxController {
     if (Get.isRegistered<SalesController>()) {
       await Get.find<SalesController>().loadDailySession();
     }
+  }
+
+  Future<bool> submitSettlement(
+    SalesOrderDetailModel order, {
+    required double amount,
+    required double carrierFee,
+    required bool archiveAfterSettlement,
+    required String idempotencyKey,
+  }) async {
+    final source =
+        order.carrierReceivableBalance > 0 ? 'carrier' : 'customer_debt';
+    final succeeded = await runAction(
+        () => repository.settle(order.id, {
+              'delivery_settled_amount': amount,
+              if (source == 'carrier') 'carrier_fee': carrierFee,
+              'source': source,
+              'archive_after_settlement': archiveAfterSettlement,
+              'idempotency_key': idempotencyKey,
+            }),
+        showSuccessNotice: false,
+        keepCurrentTab: true);
+    if (succeeded && Get.isRegistered<SalesController>()) {
+      await Get.find<SalesController>().loadDailySession();
+    }
+    return succeeded;
   }
 
   Future<void> postponeOrder(
