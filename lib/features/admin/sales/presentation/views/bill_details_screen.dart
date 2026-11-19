@@ -42,7 +42,11 @@ class BillDetailsScreen extends GetView<SalesController> {
         actions: [
           IconButton(
             tooltip: 'edit'.tr,
-            onPressed: () => controller.openEditInstantSaleFromInvoice(context),
+            onPressed: () {
+              if (!controller.isLoading.value && controller.invoiceModel != null) {
+                controller.openEditInstantSaleFromInvoice(context);
+              }
+            },
             icon: const Icon(Icons.edit_outlined),
           ),
         ],

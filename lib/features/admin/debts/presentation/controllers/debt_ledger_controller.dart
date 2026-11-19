@@ -694,30 +694,37 @@ class DebtLedgerController extends GetxController {
   Future<void> loadPersonDetail() async {
     final person = selectedPerson;
     if (person == null) return;
-    personLoading(true);
-    final result = await repository.getPerson(
-      customerId: selectedPerson!.isCustomer ? selectedPerson!.id : null,
-      sellerId: selectedPerson!.isCustomer ? null : selectedPerson!.id,
-      startDate: _formatDate(customStartDate.value),
-      endDate: _formatDate(customEndDate.value),
-      currency: selectedCurrency.value,
-      balanceScope: selectedBalanceScope.value,
-    );
-    result.fold(
-      (failure) => AppFailureNotice.show(
-        title: 'error'.tr,
-        message: failure.errMessage,
-      ),
-      (data) {
-        if (selectedPerson?.id != person.id ||
-            selectedPerson?.personType != person.personType) {
-          return;
-        }
-        personDetail.value = data;
-        selectedPerson = data.person;
-      },
-    );
-    personLoading(false);
+    final cachedPerson = personDetail.value?.person;
+    // Keep the statement mounted while refreshing the same account so its
+    // scroll position survives returning from invoices and transaction details.
+    personLoading(cachedPerson?.id != person.id ||
+        cachedPerson?.personType != person.personType);
+    try {
+      final result = await repository.getPerson(
+        customerId: person.isCustomer ? person.id : null,
+        sellerId: person.isCustomer ? null : person.id,
+        startDate: _formatDate(customStartDate.value),
+        endDate: _formatDate(customEndDate.value),
+        currency: selectedCurrency.value,
+        balanceScope: selectedBalanceScope.value,
+      );
+      result.fold(
+        (failure) => AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
+        ),
+        (data) {
+          if (selectedPerson?.id != person.id ||
+              selectedPerson?.personType != person.personType) {
+            return;
+          }
+          personDetail.value = data;
+          selectedPerson = data.person;
+        },
+      );
+    } finally {
+      personLoading(false);
+    }
     await loadPersonActivity();
   }
 
@@ -904,19 +911,14 @@ class DebtLedgerController extends GetxController {
   }
 
   Future<void> openTransactionDetail(LedgerTransaction transaction) async {
-    if (!transaction.isInvoiceReceipt && await _openLinkedSource(transaction)) {
-      await loadPersonDetail();
-      return;
+    final openedSource =
+        !transaction.isInvoiceReceipt && await _openLinkedSource(transaction);
+    if (!openedSource) {
+      selectedTransaction.value = transaction;
+      if (transaction.id > 0) loadTransactionActivity(transaction.id);
+      await Get.to(() => const TransactionDetailScreen());
     }
-
-    selectedTransaction.value = transaction;
-    if (transaction.id > 0) loadTransactionActivity(transaction.id);
-    Get.to(() => const TransactionDetailScreen())?.then((changed) {
-      if (changed == true) {
-        loadPersonDetail();
-        fetchSummary();
-      }
-    });
+    await Future.wait([loadPersonDetail(), fetchSummary()]);
   }
 
   Future<bool> _openLinkedSource(LedgerTransaction transaction) =>

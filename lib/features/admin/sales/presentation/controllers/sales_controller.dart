@@ -5644,23 +5644,33 @@ class SalesController extends GetxController
   }
 
   InvoiceModel? invoiceModel;
+  int _invoiceLoadRequest = 0;
 
   Future<void> getInvoice({required String invoiceId}) async {
+    final request = ++_invoiceLoadRequest;
+    invoiceModel = null;
     isLoading(true);
     update();
     try {
-      invoiceModel = await invoiceModelUsecase.call(invoiceId: invoiceId);
+      final invoice = await invoiceModelUsecase.call(invoiceId: invoiceId);
+      if (request == _invoiceLoadRequest) invoiceModel = invoice;
     } catch (_) {
-      invoiceModel = null;
+      if (request == _invoiceLoadRequest) invoiceModel = null;
       rethrow;
     } finally {
-      isLoading(false);
-      update();
+      if (request == _invoiceLoadRequest) {
+        isLoading(false);
+        update();
+      }
     }
   }
 
   Future<void> openInstantSaleBillDetails(String invoiceId) async {
-    await getInvoice(invoiceId: invoiceId);
+    // Show the destination immediately; its body already handles loading.
+    // Handle failures here even if the user leaves before the request finishes.
+    getInvoice(invoiceId: invoiceId).catchError((Object error) {
+      AppFailureNotice.show(title: 'error'.tr, message: error.toString());
+    });
     await Get.toNamed(AppRoutes.INSTANTSALEBILLDETAILSSCREEN);
   }
 

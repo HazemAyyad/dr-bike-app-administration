@@ -22,6 +22,62 @@ class PersonDetailScreen extends StatefulWidget {
 }
 
 class _PersonDetailScreenState extends State<PersonDetailScreen> {
+  final _scrollController = ScrollController();
+  final _transactionKeys = <String, GlobalKey>{};
+  final _transactionHighlights = <String, ValueNotifier<bool>>{};
+  String? _focusedTransaction;
+  bool _openingTransaction = false;
+
+  String _transactionIdentity(LedgerTransaction tx) =>
+      '${tx.source ?? 'manual'}:${tx.sourceId}:${tx.id}:'
+      '${tx.kind}:${tx.isInvoiceReceipt}:${tx.currency}';
+
+  double? _transactionTop(GlobalKey? key) {
+    final renderObject = key?.currentContext?.findRenderObject();
+    return renderObject is RenderBox && renderObject.attached
+        ? renderObject.localToGlobal(Offset.zero).dy
+        : null;
+  }
+
+  Future<void> _openTransaction(LedgerTransaction tx) async {
+    if (_openingTransaction) return;
+    final identity = _transactionIdentity(tx);
+    final key = _transactionKeys[identity];
+    final top = _transactionTop(key);
+    final offset = _scrollController.offset;
+    _transactionHighlights[_focusedTransaction]?.value = false;
+    _focusedTransaction = identity;
+    _transactionHighlights[identity]?.value = true;
+    _openingTransaction = true;
+    try {
+      await Get.find<DebtLedgerController>().openTransactionDetail(tx);
+      if (!mounted) return;
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted || !_scrollController.hasClients) return;
+      final updatedTop = _transactionTop(key);
+      // Anchor the opened row even if an edit changes the height of earlier
+      // entries. If it was deleted, retain the closest valid scroll offset.
+      final target = top != null && updatedTop != null
+          ? _scrollController.offset + updatedTop - top
+          : offset;
+      final position = _scrollController.position;
+      _scrollController.jumpTo(
+        target.clamp(position.minScrollExtent, position.maxScrollExtent),
+      );
+    } finally {
+      _openingTransaction = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final highlight in _transactionHighlights.values) {
+      highlight.dispose();
+    }
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -100,11 +156,14 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         ),
         body: Obx(() {
           final c = controller;
-          if (c.personLoading.value) {
+          final detail = c.personDetail.value;
+          if (c.personLoading.value ||
+              (detail != null &&
+                  (detail.person.id != person?.id ||
+                      detail.person.personType != person?.personType))) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final detail = c.personDetail.value;
           if (detail == null) {
             return Center(child: Text('ledgerNoTransactions'.tr));
           }
@@ -113,6 +172,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
             children: [
               Expanded(
                 child: ListView(
+                  controller: _scrollController,
                   padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 8.h),
                   children: [
                     Obx(
@@ -229,14 +289,19 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                         );
                       }
                       return Column(
-                        children: txs
-                            .map(
-                              (tx) => _TransactionCard(
-                                transaction: tx,
-                                onTap: () => c.openTransactionDetail(tx),
-                              ),
-                            )
-                            .toList(),
+                        children: txs.map(
+                          (tx) {
+                            final identity = _transactionIdentity(tx);
+                            return _TransactionCard(
+                              key: _transactionKeys.putIfAbsent(
+                                  identity, () => GlobalKey()),
+                              transaction: tx,
+                              highlight: _transactionHighlights.putIfAbsent(
+                                  identity, () => ValueNotifier(false)),
+                              onTap: () => _openTransaction(tx),
+                            );
+                          },
+                        ).toList(),
                       );
                     }),
                     SizedBox(height: 16.h),
@@ -520,14 +585,22 @@ class _QuickAction extends StatelessWidget {
 class _TransactionCard extends StatelessWidget {
   final LedgerTransaction transaction;
   final VoidCallback onTap;
+  final ValueNotifier<bool> highlight;
 
   const _TransactionCard({
+    Key? key,
     required this.transaction,
     required this.onTap,
-  });
+    required this.highlight,
+  }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
+        valueListenable: highlight,
+        builder: (context, focused, _) => _buildCard(context, focused),
+      );
+
+  Widget _buildCard(BuildContext context, bool focused) {
     final ledger = Get.find<DebtLedgerController>();
     final typeColor = LedgerColors.entry(transaction.kind);
     final balanceAfterColor = ledger.balanceColor(transaction.balanceAfter);
@@ -535,15 +608,24 @@ class _TransactionCard extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(bottom: 10.h),
       child: Material(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF242430)
-            : Colors.white,
+        color: focused
+            ? Color.alphaBlend(
+                LedgerColors.primaryBlue.withValues(alpha: .14),
+                Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF242430)
+                    : Colors.white,
+              )
+            : Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF242430)
+                : Colors.white,
         borderRadius: BorderRadius.circular(14.r),
         elevation: 0,
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14.r),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(
+              color: focused ? LedgerColors.primaryBlue : Colors.grey.shade200,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
