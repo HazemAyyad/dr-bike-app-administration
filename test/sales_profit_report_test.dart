@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:doctorbike/core/databases/api/api_consumer.dart';
@@ -6,12 +7,24 @@ import 'package:doctorbike/features/admin/accounting_reports/data/financial_acco
 import 'package:doctorbike/features/admin/accounting_reports/presentation/views/accounting_report_pdf.dart';
 import 'package:doctorbike/features/admin/accounting_reports/presentation/views/accounting_report_preview.dart';
 import 'package:doctorbike/features/admin/accounting_reports/presentation/views/sales_profit_report_screen.dart';
+import 'package:doctorbike/features/admin/accounting_reports/presentation/views/sales_profit_product_report.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/accounting_printing_stub.dart';
 
 void main() {
+  setUpAll(() async {
+    await (FontLoader('Almarai')
+          ..addFont(
+              rootBundle.load('assets/fonts/Almarai/Almarai-Regular.ttf')))
+        .load();
+    await (FontLoader('MaterialIcons')
+          ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf')))
+        .load();
+  });
   for (final width in [320.0, 1280.0]) {
     testWidgets(
         'profit report preserves totals, filters and withdrawals at $width',
@@ -53,11 +66,12 @@ void main() {
       ]);
       expect(total.rows.last[6], '30.00');
       expect(api.calls, 1);
-      final detailDropdown = find.byWidgetPredicate(
-          (widget) => widget is DropdownButtonFormField<bool>);
+      final detailDropdown = find.byWidgetPredicate((widget) =>
+          widget is DropdownButtonFormField<String> &&
+          widget.decoration.labelText == 'طريقة العرض');
       tester
-          .widget<DropdownButtonFormField<bool>>(detailDropdown)
-          .onChanged!(true);
+          .widget<DropdownButtonFormField<String>>(detailDropdown)
+          .onChanged!('detail');
       await settleAccountingPreview(tester);
       final detail = mainDocument();
       expect(detail.columns, [
@@ -112,6 +126,114 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  for (final width in [320.0, 1280.0]) {
+    testWidgets('product profit dashboard, filters and export agree at $width',
+        (tester) async {
+      installAccountingPrintingStub();
+      tester.view.physicalSize = Size(width, 1100);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final api = _ProfitApi();
+      await tester.pumpWidget(RepaintBoundary(
+        key: const ValueKey('product-profit-evidence'),
+        child: MaterialApp(
+          theme: ThemeData(fontFamily: 'Almarai'),
+          home: SalesProfitReportScreen(
+              service: FinancialAccountingApiService(api: api)),
+        ),
+      ));
+      await settleAccountingPreview(tester);
+      final viewDropdown = find.byWidgetPredicate((widget) =>
+          widget is DropdownButtonFormField<String> &&
+          widget.decoration.labelText == 'طريقة العرض');
+      tester
+          .widget<DropdownButtonFormField<String>>(viewDropdown)
+          .onChanged!('product');
+      await settleAccountingPreview(tester);
+      expect(api.last!['group_by'], 'product');
+      expect(find.text('المستودع: المخزون العام'), findsOneWidget);
+      expect(find.text('إظهار السحوبات غير المفوترة'), findsNothing);
+      final document = tester
+          .widget<SalesProfitProductDashboard>(
+              find.byType(SalesProfitProductDashboard))
+          .document;
+      expect(document.kind, 'sales_profit_by_product');
+      expect(document.rows.first[10], '90.00');
+      expect(document.rows.first[11], '50.00');
+      expect(document.rows.first[12], '125.00%');
+      expect(document.summary['نسبة الربح على التكلفة'], '50.00%');
+      expect(document.charts, hasLength(2));
+      expect(document.charts.first.entries.single.values.single, 125);
+      expect(document.charts.last.entries.last.values.last, -20);
+      expect(document.selection, contains('المجموعة: الكل'));
+      await _evidence(tester, [document], width);
+      await tester.ensureVisible(find.text('تفصيل ربحية الأصناف'));
+      await settleAccountingPreview(tester);
+      await _dashboardEvidence(tester, width, 'table');
+      await tester.ensureVisible(find.text('مقارنة المبيعات والربح'));
+      await settleAccountingPreview(tester);
+      await _dashboardEvidence(tester, width, 'charts');
+      expect(tester.takeException(), isNull);
+
+      tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position
+          .jumpTo(0);
+      await settleAccountingPreview(tester);
+      final categoryDropdown = find.byWidgetPredicate((widget) =>
+          widget is DropdownButtonFormField<String> &&
+          widget.decoration.labelText == 'المجموعة');
+      tester
+          .widget<DropdownButtonFormField<String>>(categoryDropdown)
+          .onChanged!('4');
+      await settleAccountingPreview(tester);
+      expect(find.byType(AccountingReportPreview), findsNothing);
+      expect(find.byType(SalesProfitProductDashboard), findsNothing);
+      expect(find.text('مقارنة المبيعات والربح'), findsNothing);
+      await tester.ensureVisible(find.text('تطبيق وعرض التقرير'));
+      await tester.tap(find.text('تطبيق وعرض التقرير'));
+      await settleAccountingPreview(tester);
+      expect(api.last!['category_id'], '4');
+      final filtered = tester
+          .widget<SalesProfitProductDashboard>(
+              find.byType(SalesProfitProductDashboard))
+          .document;
+      expect(filtered.selection, contains('المجموعة: قطع غيار'));
+      expect(filtered.summary['إجمالي الربح قبل المصاريف'], '—');
+      expect(filtered.charts.last.entries.first.values.last, isNull);
+      expect(
+          find.textContaining('تكلفة بعض العمليات غير مكتملة'), findsOneWidget);
+      tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position
+          .jumpTo(0);
+      await settleAccountingPreview(tester);
+      tester
+          .widget<DropdownButtonFormField<String>>(viewDropdown)
+          .onChanged!('invoice');
+      await settleAccountingPreview(tester);
+      expect(api.last!.containsKey('category_id'), isFalse);
+      expect(api.last!.containsKey('group_by'), isFalse);
+      expect(tester.takeException(), isNull);
+    });
+  }
+}
+
+Future<void> _dashboardEvidence(
+    WidgetTester tester, double width, String name) async {
+  final folder = Platform.environment['ACCOUNTING_REPORT_EVIDENCE_DIR'];
+  if (folder == null) return;
+  final boundary = tester.renderObject<RenderRepaintBoundary>(
+      find.byKey(const ValueKey('product-profit-evidence')));
+  final screenshot = await boundary.toImage();
+  await tester.runAsync(() async {
+    final data = await screenshot.toByteData(format: ui.ImageByteFormat.png);
+    await File('$folder/product_${width.toInt()}_$name.png')
+        .writeAsBytes(data!.buffer.asUint8List());
+  });
+  screenshot.dispose();
 }
 
 Future<void> _evidence(WidgetTester tester,
@@ -207,7 +329,86 @@ class _ProfitApi extends Fake implements ApiConsumer {
         'notes': [
           'الربح قبل المصاريف. تكلفة البونص ضمن الفاتورة. نسبة الربح على التكلفة.'
         ],
+        if (queryParameters['group_by'] == 'product')
+          'product_report':
+              _productReport(queryParameters['category_id'] != null),
       }
     });
   }
 }
+
+Map<String, dynamic> _productReport(bool missingCost) => {
+      'summary': {
+        'product_count': 2,
+        'purchased_quantity': 10,
+        'sold_quantity': 3,
+        'bonus_quantity': 1,
+        'purchase_total': 200,
+        'sales_total': 90,
+        'cost_total': missingCost ? null : 60,
+        'discount': 10,
+        'profit': missingCost ? null : 30,
+        'profit_percent': missingCost ? null : 50,
+        'missing_cost_count': missingCost ? 1 : 0,
+      },
+      'rows': [
+        {
+          'product_code': 'P001',
+          'product': 'قطعة غيار أصلية للدراجة',
+          'is_service': false,
+          'purchased_quantity': 10,
+          'purchase_total': 200,
+          'sold_quantity': 2,
+          'bonus_quantity': 0,
+          'unit_cost': 20,
+          'price': 45,
+          'discount': 10,
+          'cost_total': missingCost ? null : 40,
+          'sales_total': 90,
+          'profit': missingCost ? null : 50,
+          'profit_percent': missingCost ? null : 125,
+        },
+        {
+          'product_code': 'P002',
+          'product': 'بونص',
+          'is_service': false,
+          'purchased_quantity': 0,
+          'purchase_total': 0,
+          'sold_quantity': 1,
+          'bonus_quantity': 1,
+          'unit_cost': 20,
+          'price': 0,
+          'discount': 0,
+          'cost_total': 20,
+          'sales_total': 0,
+          'profit': -20,
+          'profit_percent': -100,
+        },
+      ],
+      'charts': {
+        'top_products': [
+          if (!missingCost)
+            {'product': 'قطعة غيار أصلية للدراجة', 'profit_percent': 125},
+        ],
+        'comparison': [
+          {
+            'product': 'قطعة غيار أصلية للدراجة',
+            'sales_total': 90,
+            'profit': missingCost ? null : 50
+          },
+          {'product': 'بونص', 'sales_total': 0, 'profit': -20},
+        ],
+      },
+      'options': {
+        'categories': [
+          {'id': 4, 'name': 'قطع غيار'}
+        ],
+        'store_sections': [
+          {'id': 8, 'name': 'الرف الأول'}
+        ],
+      },
+      'notes': [
+        'نسبة الربح على التكلفة = الربح ÷ تكلفة المباع × 100.',
+        'المشتريات حسب تاريخ الاستلام، ولا تطرح من الربح مرة أخرى.',
+      ],
+    };

@@ -10,6 +10,7 @@ import 'package:printing/printing.dart';
 import '../../data/financial_accounting_api_service.dart';
 import 'accounting_report_pdf.dart';
 import 'accounting_report_preview.dart';
+import 'sales_profit_product_report.dart';
 
 class SalesProfitReportScreen extends StatefulWidget {
   const SalesProfitReportScreen({Key? key, required this.service})
@@ -38,7 +39,12 @@ class _SalesProfitReportScreenState extends State<SalesProfitReportScreen> {
   late DateTime _to;
   String _currency = 'شيكل';
   String _source = 'all';
-  bool _detail = false;
+  String _view = 'invoice';
+  bool get _detail => _view == 'detail';
+  bool get _byProduct => _view == 'product';
+  String? _categoryId;
+  String? _sectionId;
+  Map _productOptions = const {};
   bool _returns = true;
   bool _withdrawals = true;
   bool _loading = false;
@@ -47,6 +53,13 @@ class _SalesProfitReportScreenState extends State<SalesProfitReportScreen> {
   Map<String, dynamic>? _report;
   List<AccountingReportDocument> _documents = [];
   bool get _busy => _loading || _exporting;
+  num get _missingCostCount {
+    if (_byProduct) {
+      return _report?['product_report']?['summary']?['missing_cost_count'] ?? 0;
+    }
+    return _report?['summary']?['missing_cost_count'] ?? 0;
+  }
+
   String _date(DateTime value) => value.toIso8601String().substring(0, 10);
   String _amount(dynamic value) => value is num ? _money.format(value) : '—';
   String _precise(dynamic value) => value is num ? _cost.format(value) : '—';
@@ -85,10 +98,19 @@ class _SalesProfitReportScreenState extends State<SalesProfitReportScreen> {
         'currency': _currency,
         'source': _source,
         'include_returns': _returns ? 1 : 0,
+        if (_byProduct) 'group_by': 'product',
+        if (_byProduct && _categoryId != null) 'category_id': _categoryId,
+        if (_byProduct && _sectionId != null) 'store_section_id': _sectionId,
       });
+      if (_byProduct && report['product_report'] is! Map) {
+        throw Exception('تقرير الأصناف غير متاح على الخادم');
+      }
       if (mounted) {
         setState(() {
           _report = report;
+          if (_byProduct) {
+            _productOptions = report['product_report']['options'] as Map;
+          }
           _rebuild();
         });
       }
@@ -104,6 +126,13 @@ class _SalesProfitReportScreenState extends State<SalesProfitReportScreen> {
   void _rebuild() {
     final report = _report;
     if (report == null) return;
+    if (_byProduct) {
+      _documents = [
+        buildSalesProfitProductDocument(
+            report, _sources[report['filters']['source']] ?? 'الكل')
+      ];
+      return;
+    }
     final filters = report['filters'] as Map;
     final summary = report['summary'] as Map;
     final documents = (report['documents'] as List).cast<Map>();
@@ -301,6 +330,15 @@ class _SalesProfitReportScreenState extends State<SalesProfitReportScreen> {
             [document.from, document.to, document.currency],
             document.columns,
             ...document.rows,
+            if (document.charts.isNotEmpty) ...[
+              [],
+              ['ملخص التقرير'],
+              for (final entry in document.summary.entries)
+                [entry.key, entry.value],
+              [],
+              ['طريقة الحساب'],
+              for (final note in document.notes) [note],
+            ],
             []
           ]);
         }
@@ -348,6 +386,42 @@ class _SalesProfitReportScreenState extends State<SalesProfitReportScreen> {
                 textDirection: TextDirection.ltr))
       ]));
 
+  Future<void> _changeView(String value) async {
+    if (_busy || value == _view) return;
+    final reload = _byProduct || value == 'product';
+    setState(() {
+      _view = value;
+      if (_byProduct && _source == 'stock') _source = 'all';
+      if (reload) {
+        _clear();
+      } else {
+        _rebuild();
+      }
+    });
+    if (reload) await _load();
+  }
+
+  Widget _productFilter(String label, String collection, String? value,
+          void Function(String?) change) =>
+      DropdownButtonFormField<String>(
+        key: ValueKey('$collection:${value ?? ''}'),
+        initialValue: value ?? '',
+        isExpanded: true,
+        decoration: InputDecoration(labelText: label),
+        items: [
+          const DropdownMenuItem(value: '', child: Text('الكل')),
+          for (final option in (_productOptions[collection] as List? ?? []))
+            DropdownMenuItem(
+                value: '${option['id']}', child: Text('${option['name']}')),
+        ],
+        onChanged: _busy
+            ? null
+            : (selected) => setState(() {
+                  change(selected == '' ? null : selected);
+                  _clear();
+                }),
+      );
+
   @override
   Widget build(BuildContext context) => Directionality(
       textDirection: TextDirection.rtl,
@@ -384,40 +458,57 @@ class _SalesProfitReportScreenState extends State<SalesProfitReportScreen> {
                                 Expanded(child: _dateButton(false))
                               ]),
                               const SizedBox(height: 12),
-                              DropdownButtonFormField<bool>(
+                              DropdownButtonFormField<String>(
                                   isExpanded: true,
-                                  initialValue: _detail,
+                                  initialValue: _view,
                                   decoration: const InputDecoration(
                                       labelText: 'طريقة العرض'),
                                   items: const [
                                     DropdownMenuItem(
-                                        value: false,
+                                        value: 'invoice',
                                         child: Text('إجمالي حسب الفاتورة')),
                                     DropdownMenuItem(
-                                        value: true,
+                                        value: 'detail',
                                         child:
-                                            Text('تفصيلي حسب أصناف الفاتورة'))
+                                            Text('تفصيلي حسب أصناف الفاتورة')),
+                                    DropdownMenuItem(
+                                        value: 'product',
+                                        child:
+                                            Text('ربحية المبيعات حسب الصنف')),
                                   ],
                                   onChanged: _busy
                                       ? null
                                       : (value) {
                                           if (value != null) {
-                                            setState(() {
-                                              _detail = value;
-                                              _rebuild();
-                                            });
+                                            _changeView(value);
                                           }
                                         }),
+                              if (_byProduct) ...[
+                                const ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: Icon(Icons.warehouse_outlined),
+                                    title: Text('المستودع: المخزون العام')),
+                                _productFilter(
+                                    'المجموعة',
+                                    'categories',
+                                    _categoryId,
+                                    (value) => _categoryId = value),
+                                _productFilter('قسم المخزن', 'store_sections',
+                                    _sectionId, (value) => _sectionId = value),
+                              ],
                               DropdownButtonFormField<String>(
+                                  key: ValueKey(
+                                      'profit-source:$_source:$_byProduct'),
                                   isExpanded: true,
                                   initialValue: _source,
                                   decoration: const InputDecoration(
                                       labelText: 'مصدر العملية'),
                                   items: [
                                     for (final entry in _sources.entries)
-                                      DropdownMenuItem(
-                                          value: entry.key,
-                                          child: Text(entry.value))
+                                      if (!_byProduct || entry.key != 'stock')
+                                        DropdownMenuItem(
+                                            value: entry.key,
+                                            child: Text(entry.value))
                                   ],
                                   onChanged: _busy
                                       ? null
@@ -464,17 +555,18 @@ class _SalesProfitReportScreenState extends State<SalesProfitReportScreen> {
                                             _returns = value;
                                             _clear();
                                           })),
-                              SwitchListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title:
-                                      const Text('إظهار السحوبات غير المفوترة'),
-                                  value: _withdrawals,
-                                  onChanged: _busy
-                                      ? null
-                                      : (value) => setState(() {
-                                            _withdrawals = value;
-                                            _rebuild();
-                                          })),
+                              if (!_byProduct)
+                                SwitchListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    title: const Text(
+                                        'إظهار السحوبات غير المفوترة'),
+                                    value: _withdrawals,
+                                    onChanged: _busy
+                                        ? null
+                                        : (value) => setState(() {
+                                              _withdrawals = value;
+                                              _rebuild();
+                                            })),
                               FilledButton(
                                   onPressed: _busy ? null : _load,
                                   child: const Text('تطبيق وعرض التقرير')),
@@ -485,11 +577,17 @@ class _SalesProfitReportScreenState extends State<SalesProfitReportScreen> {
                   Text(_error!,
                       style: TextStyle(
                           color: Theme.of(context).colorScheme.error)),
-                if ((_report?['summary']?['missing_cost_count'] ?? 0) > 0)
+                if (_missingCostCount > 0)
                   const Padding(
                       padding: EdgeInsets.all(8),
                       child: Text(
                           'تكلفة بعض العمليات غير مكتملة؛ تظهر أرباحها وإجمالي الربح — لحين استكمال التكلفة.')),
+                if (_byProduct && _documents.isNotEmpty) ...[
+                  SalesProfitProductDashboard(document: _documents.first),
+                  const SizedBox(height: 20),
+                  const Text('معاينة نسخة الطباعة وPDF',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ],
                 for (final document in _documents)
                   Padding(
                       padding: const EdgeInsets.only(bottom: 16),

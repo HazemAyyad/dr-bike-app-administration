@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'accounting_report_chart.dart';
 
 class AccountingReportDocument {
   AccountingReportDocument({
@@ -16,6 +17,8 @@ class AccountingReportDocument {
     required this.notes,
     required this.selection,
     this.subtotalRows = const {},
+    this.charts = const [],
+    this.columnWeights,
   }) : generatedAt = DateTime.now();
   final String kind;
   final String title;
@@ -28,6 +31,8 @@ class AccountingReportDocument {
   final List<String> notes;
   final String selection;
   final Set<int> subtotalRows;
+  final List<AccountingReportChart> charts;
+  final List<double>? columnWeights;
   final DateTime generatedAt;
   PdfPageFormat get pageFormat =>
       columns.length > 6 ? PdfPageFormat.a4.landscape : PdfPageFormat.a4;
@@ -168,6 +173,13 @@ class AccountingReportPdf {
           ]),
           pw.SizedBox(height: 12),
           pw.TableHelper.fromTextArray(
+            columnWidths: data.columnWeights == null
+                ? null
+                : {
+                    for (var i = 0; i < data.columnWeights!.length; i++)
+                      i: pw.FlexColumnWidth(data
+                          .columnWeights![data.columnWeights!.length - 1 - i]),
+                  },
             headers: data.columns.reversed.toList(),
             data: data.rows.map((row) => row.reversed.toList()).toList(),
             headerStyle:
@@ -191,6 +203,10 @@ class AccountingReportPdf {
             border: pw.TableBorder.all(color: border, width: .5),
           ),
           pw.SizedBox(height: 12),
+          for (final chart in data.charts) ...[
+            accountingPdfChart(chart, bold),
+            pw.SizedBox(height: 12),
+          ],
           for (final note in data.notes)
             pw.Padding(
                 padding: const pw.EdgeInsets.only(bottom: 5),

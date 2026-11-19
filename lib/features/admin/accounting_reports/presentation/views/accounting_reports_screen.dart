@@ -45,7 +45,7 @@ class AccountingReportsScreen extends StatelessWidget {
                     AppRoutes.INCOMEACCOUNTINGSCREEN),
                 _card(
                     'تقرير أرباح المبيعات',
-                    'إجمالي حسب الفاتورة أو تفصيلي حسب أصنافها، للبيع والطلبيات والصيانة.',
+                    'حسب الفاتورة أو أصنافها، وربحية مجمعة حسب الصنف مع الرسوم البيانية.',
                     Icons.trending_up,
                     AppRoutes.SALESPROFITREPORTSCREEN),
               ],
